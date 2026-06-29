@@ -9,10 +9,10 @@ The application utilizes Deep Learning to detect mold/dust contamination and int
   Week 3 (Deployment): Building an interactive web interface using Streamlit and deploying the live application online.
 
 # Tech Stack (To be implemented)
-  Language: Python
-  AI Framework: TensorFlow / Keras (MobileNetV2 architecture)
-  UI & Deployment: Streamlit / Streamlit Community Cloud
-  Version Control: Git & GitHub
+- **Language:** Python
+- **AI Framework:** TensorFlow / Keras (MobileNetV2 architecture)
+- **UI & Deployment:** Streamlit / Streamlit Community Cloud
+- **Version Control:** Git & GitHub
 
 # License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
