@@ -207,20 +207,72 @@
     const LABELS = ["Sạch (Clean)", "Bụi bẩn (Dusty)", "Nấm mốc (Moldy)"];
     let model;
 
-    // 1. Tải mô hình AI lên trình duyệt
+ 
+        // 🚀 HÀM TẢI MÔ HÌNH THÔNG MINH - SỬA LỖI TREO NGẦM KERAS 3
     async function loadModel() {
-        try {
-            statusTxt.innerText = "⏳ Đang tải mô hình MobileNetV3...";
-            // Sử dụng đường dẫn tương đối './model.json' để tương thích tốt với GitHub Pages
-            model = await tf.loadLayersModel('./model.json');
-            statusTxt.innerText = "✅ Hệ thống AI đã sẵn sàng hoạt động!";
-            statusTxt.style.color = "var(--accent-success)";
-        } catch (error) {
-            console.error("Lỗi không thể tải mô hình:", error);
-            statusTxt.innerText = "❌ Lỗi tải mô hình AI. Vui lòng kiểm tra file model.json.";
-            statusTxt.style.color = "var(--accent-error)";
+        let pathsToTry = ['./model.json', './models/model.json'];
+        
+        for (let path of pathsToTry) {
+            try {
+                statusTxt.innerText = `⏳ Đang nạp tệp cấu trúc mô hình từ: ${path}...`;
+                
+                // 1. Tải file model.json dưới dạng văn bản thô để xử lý cấu trúc trước
+                const response = await fetch(path);
+                if (!response.ok) continue;
+                
+                const modelJsonText = await response.text();
+                
+                // 2. 🛠️ VÁ LỖI KHÔNG TƯƠNG THÍCH: Chuyển đổi định dạng Keras 3 về Keras 2 phù hợp với trình duyệt
+                let fixedJsonText = modelJsonText.replace(/"module":\s*"keras[^"]*"\s*,?/g, '');
+                fixedJsonText = fixedJsonText.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+                
+                const patchedModelJson = JSON.parse(fixedJsonText);
+                
+                // 3. Khởi tạo đối tượng xử lý nạp tệp ảo của TensorFlow.js
+                const baseDir = path.substring(0, path.lastIndexOf('/')) || '.';
+                
+                const ioHandler = {
+                    load: async () => {
+                        const weightDataPromises = patchedModelJson.weightsManifest.map(async (manifest) => {
+                            const weightUrl = `${baseDir}/${manifest.paths}`;
+                            const res = await fetch(weightUrl);
+                            if (!res.ok) throw new Error(`Không thể nạp file trọng số: ${weightUrl}`);
+                            return res.arrayBuffer();
+                        });
+                        
+                        const weightBuffers = await Promise.all(weightDataPromises);
+                        
+                        const combinedBuffer = new Uint8Array(weightBuffers.reduce((acc, buf) => acc + buf.byteLength, 0));
+                        let offset = 0;
+                        for (const buf of weightBuffers) {
+                            combinedBuffer.set(new Uint8Array(buf), offset);
+                            offset += buf.byteLength;
+                        }
+                        
+                        return {
+                            modelTopology: patchedModelJson.modelTopology,
+                            weightSpecs: patchedModelJson.weightsManifest.flatMap(m => m.weights),
+                            weightData: combinedBuffer.buffer
+                        };
+                    }
+                };
+                
+                // 4. Thực hiện nạp mô hình đã được sửa lỗi vào bộ nhớ trình duyệt
+                model = await tf.loadLayersModel(ioHandler);
+                
+                statusTxt.innerText = "✅ Hệ thống Edge AI đã sẵn sàng hoạt động!";
+                statusTxt.style.color = "var(--accent-success)";
+                return; // Thoát hàm ngay khi tải thành công
+                
+            } catch (err) {
+                console.warn(`Thử nghiệm thất bại tại đường dẫn ${path}:`, err);
+            }
         }
+        
+        statusTxt.innerText = "❌ Lỗi: Không thể khởi tạo cấu trúc mạng nơ-ron do lỗi định dạng model.json.";
+        statusTxt.style.color = "var(--accent-error)";
     }
+
 
     // 2. Xử lý sự kiện Upload ảnh qua thẻ input
     imageUpload.addEventListener('change', function(event) {
