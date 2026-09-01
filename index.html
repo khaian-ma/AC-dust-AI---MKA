@@ -53,8 +53,11 @@
     async function initApp() {
         document.getElementById('status').innerText = "⏳ Streaming deep learning model layers...";
         try {
-            // Resolving the topology directly from the target relative structure folder
-            model = await tf.loadLayersModel('./models/model.json');
+            // Ép trình duyệt gọi trực tiếp bằng liên kết HTTPS bảo mật tuyệt đối của máy chủ GitHub
+            model = await tf.loadLayersModel('https://githubusercontent.com');
+            
+            // Unlocking interface controls instantly upon absolute successful execution mapping
+
             
             // Unlocking interface controls instantly upon absolute successful execution mapping
             const btn = document.getElementById('uploadBtn');
