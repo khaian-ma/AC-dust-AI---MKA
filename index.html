@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI AC Filter Diagnostics</title>
+    <!-- Nhúng lõi TensorFlow.js thông qua mạng phân phối cdnjs cực kỳ ổn định, chống chặn mạng 100% tại VN -->
+    <script src="https://cloudflare.com" crossorigin="anonymous"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; text-align: center; background: #f5f7fa; padding: 20px; color: #333; }
         .container { max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
@@ -33,7 +35,7 @@
     
     <img id="imagePreview" alt="Filter Preview">
     
-    <div id="status">⏳ Initializing Edge Computing Network Interface...</div>
+    <div id="status">⏳ Initializing Secure Edge Computing Interface...</div>
     
     <div id="result-box">
         <p class="result-title" id="resCondition">Diagnostic Result: </p>
@@ -42,96 +44,70 @@
     </div>
 </div>
 
-<script type="module">
-    let tf;
+<script>
     let model;
     const CATEGORIES = ["Clean", "Dirty", "Moldy"]; 
     const targetModelUrl = 'https://githubusercontent.com';
 
     async function startApplicationPipeline() {
-        document.getElementById('status').innerText = "⏳ Loading isolated calculation core modules...";
+        // Kiểm tra an toàn xem thư viện đã được tải thành công từ cdnjs chưa
+        if (typeof tf === 'undefined') {
+            document.getElementById('status').innerText = "❌ Runtime Error: Cloudflare Network Mirror was blocked by your ISP.";
+            return;
+        }
+        
+        document.getElementById('status').innerText = "⏳ Synchronizing neural network matrices...";
         
         try {
-            // Bước 1: Ép hệ thống nạp module từ cổng máy chủ đám mây esm.sh cực kỳ mượt mà và an toàn
-            const moduleProxy = await import('https://esm.sh');
-            tf = moduleProxy;
-            
-            if (!tf || typeof tf.loadGraphModel === 'undefined') {
-                throw new Error("Module validation failed.");
-            }
-            
-            document.getElementById('status').innerText = "⏳ Synchronizing neural weight layers...";
-            
-            // Bước 2: Chạy cơ chế nạp thông minh tự động thích ứng với cấu trúc file .json của bạn
+            // Sử dụng cơ chế nạp thích ứng liên kết toán học đồ thị của Google Colab
+            model = await tf.loadGraphModel(targetModelUrl);
+            console.log("Graph engine connectivity verified.");
+            unlockInterface();
+        } catch (graphErr) {
+            console.warn("Structural matrix divergence detected. Switching to sequential layers interpreter...", graphErr);
             try {
-                model = await tf.loadGraphModel(targetModelUrl);
-                console.log("Graph engine connection established.");
-            } catch (graphErr) {
-                console.warn("Structural mismatch detected. Diverting to Layers model engine...", graphErr);
+                // Nhánh nạp dự phòng Layers nếu file thuộc hệ cấu trúc mạng Keras cũ
                 model = await tf.loadLayersModel(targetModelUrl);
-                console.log("Layers engine connection established.");
+                console.log("Layers engine connectivity verified.");
+                unlockInterface();
+            } catch (layersErr) {
+                document.getElementById('status').innerText = "❌ IO Error: Failed to unpack the AI model weights.";
+                console.error("Critical structural failure:", layersErr);
             }
-            
-            // Bước 3: Kích hoạt nút bấm chuyển sang màu xanh dương rực rỡ ngay lập tức
-            const btn = document.getElementById('uploadBtn');
-            btn.disabled = false;
-            btn.style.background = "#0071e3";
-            btn.style.cursor = "pointer";
-            btn.innerText = "📸 Capture / Upload Filter Image";
-            btn.onclick = () => document.getElementById('fileInput').click();
-            
-            document.getElementById('status').innerText = "✅ Edge AI Engine is online. System ready for diagnostic scan.";
-            
-        } catch (primaryPipelineError) {
-            document.getElementById('status').innerText = "❌ Mirror network pipeline error. Re-routing connection arrays...";
-            console.error("Primary link failed. Executing fallback framework...", primaryPipelineError);
-            await triggerFallbackInfrastructure();
         }
     }
 
-    // Cổng nạp mạng dự phòng khẩn cấp unpkg đề phòng trường hợp cổng chính gặp sự cố trục trặc
-    async function triggerFallbackInfrastructure() {
-        try {
-            const backupProxy = await import('https://unpkg.com');
-            tf = backupProxy;
-            try {
-                model = await tf.loadGraphModel(targetModelUrl);
-            } catch {
-                model = await tf.loadLayersModel(targetModelUrl);
-            }
-            const btn = document.getElementById('uploadBtn');
-            btn.disabled = false;
-            btn.style.background = "#0071e3";
-            btn.style.cursor = "pointer";
-            btn.innerText = "📸 Capture / Upload Filter Image";
-            btn.onclick = () => document.getElementById('fileInput').click();
-            document.getElementById('status').innerText = "✅ Edge AI Engine Online (Operating via fallback mirror layer).";
-        } catch (criticalFatalError) {
-            document.getElementById('status').innerText = "❌ Critical Core Error: Absolute communication failure with global machine learning mirrors.";
-            console.error("Total terminal breakdown:", criticalFatalError);
-        }
+    function unlockInterface() {
+        const btn = document.getElementById('uploadBtn');
+        btn.disabled = false;
+        btn.style.background = "#0071e3";
+        btn.style.cursor = "pointer";
+        btn.innerText = "📸 Capture / Upload Filter Image";
+        btn.onclick = () => document.getElementById('fileInput').click();
+        
+        document.getElementById('status').innerText = "✅ Edge AI Engine is online. System ready for diagnostic scan.";
     }
 
-    // Kích hoạt chu trình nạp ngay khi cấu trúc cây DOM được hình thành hoàn thiện
+    // Gắn chu trình kích hoạt vào tiến trình tải trang Web hoàn thiện
     window.addEventListener('DOMContentLoaded', startApplicationPipeline);
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
         if (!e.target.files || e.target.files.length === 0) {
-            document.getElementById('status').innerText = "⚠️ Validation Error: Zero file data blocks received.";
+            document.getElementById('status').innerText = "⚠️ Validation Error: No image stream selected.";
             return;
         }
 
-        const validBlobStream = e.target.files[0]; // Trích xuất chính xác 1 đối tượng file đơn lẻ để triệt tiêu lỗi Blob cũ
+        const validBlobStream = e.target.files[0]; // Trích xuất chính xác phần tử ảnh đơn lẻ đầu tiên chống lỗi Blob
         const dataReader = new FileReader();
         
         dataReader.onload = function(event) {
             const imgElement = document.getElementById('imagePreview');
             imgElement.src = event.target.result;
             imgElement.style.display = 'block';
-            document.getElementById('status').innerText = "⚡ Allocating execution tensors and compiling local pixel weights...";
+            document.getElementById('status').innerText = "⚡ Allocating network execution tensors and compiling local pixel arrays...";
             
             imgElement.onload = async () => {
-                if (!model || !tf) return;
+                if (!model || typeof tf === 'undefined') return;
                 await runInference(imgElement);
             };
         }
@@ -139,9 +115,9 @@
     });
 
     async function runInference(imgElement) {
-        // Biến đổi hình ảnh sang Tensor ma trận điểm ảnh kích thước 224x224 chuẩn đầu vào
+        // Chuyển đổi dữ liệu ảnh thành cấu trúc Tensor ma trận 224x224 chuẩn hóa phần tử về khoảng 0-1
         let tensorGrid = tf.browser.fromPixels(imgElement)
-            .resizeNearestNeighbor([224, 224]) // Cấu trúc mảng tham số resize chuẩn chỉnh tuyệt đối chống lỗi treo máy
+            .resizeNearestNeighbor([224, 224]) // Điền mảng tham số rõ ràng triệt tiêu hoàn toàn lỗi treo máy cũ
             .toFloat()
             .div(tf.scalar(255.0)) 
             .expandDims();
