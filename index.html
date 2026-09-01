@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AC Filter Scanner - AI Diagnostic</title>
-    <!-- Nhúng Google Fonts để giao diện đẹp hơn -->
+    <!-- Nhúng Google Fonts -->
     <link href="https://googleapis.com" rel="stylesheet">
     
     <style>
@@ -57,12 +57,10 @@
         }
 
         .upload-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
             border: 2px dashed var(--border-color);
             border-radius: 8px;
-            padding: 30px;
+            padding: 35px;
+            text-align: center;
             cursor: pointer;
             transition: border-color 0.2s;
             margin-bottom: 25px;
@@ -81,12 +79,7 @@
             font-weight: 600;
             border-radius: 6px;
             cursor: pointer;
-            margin-top: 10px;
-            transition: background-color 0.2s;
-        }
-
-        .upload-btn:hover {
-            background-color: #30363d;
+            margin-top: 15px;
         }
 
         input[type="file"] {
@@ -116,7 +109,6 @@
             border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 20px;
-            margin-top: 15px;
         }
 
         .status-title {
@@ -124,17 +116,13 @@
             font-weight: 600;
             text-transform: uppercase;
             color: var(--text-muted);
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             letter-spacing: 0.5px;
         }
 
         .result-item {
             margin-bottom: 12px;
             font-size: 15px;
-        }
-
-        .result-item:last-child {
-            margin-bottom: 0;
         }
 
         .result-item strong {
@@ -153,26 +141,22 @@
     <h1>🔍 AC Filter Scanner</h1>
     <div class="subtitle">Edge AI Diagnostic Web Application for HVAC Filter Condition Evaluation</div>
 
-    <!-- Khu vực tương tác tải ảnh lên -->
     <div class="upload-section" onclick="document.getElementById('imageUpload').click()">
         <svg width="40" height="40" viewBox="0 0 16 16" fill="currentColor" style="color: var(--text-muted); margin-bottom: 10px;">
             <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
             <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
         </svg>
-        <div style="font-size: 14px; text-align: center;">Kéo thả hình ảnh vào đây hoặc nhấp để chọn file</div>
+        <div style="font-size: 14px;">Kéo thả hình ảnh vào đây hoặc nhấp để chọn file</div>
         <button class="upload-btn">Chọn hình ảnh</button>
         <input type="file" id="imageUpload" accept="image/*">
     </div>
 
-    <!-- Khu vực hiển thị ảnh xem trước -->
     <div class="preview-container" id="previewContainer">
         <img id="filterPreview" alt="Filter Preview">
     </div>
 
-    <!-- Bảng thông tin chẩn đoán kết quả AI -->
     <div class="status-box">
         <div class="status-title">Hệ thống chẩn đoán Edge AI</div>
-        
         <div class="result-item">
             <strong>Trạng thái hệ thống:</strong> <span id="statusTxt">Đang khởi tạo mô hình...</span>
         </div>
@@ -188,10 +172,8 @@
     </div>
 </div>
 
-<!-- Bộ thư viện kết hợp TensorFlow.js chuyển hướng sang máy chủ Cloudflare CDNJS ổn định -->
+<!-- 📦 Nhúng thư viện từ Cloudflare CDNJS (Không lo bị chặn kết nối) -->
 <script src="https://cloudflare.com"></script>
-
-
 
 <script>
     const imageUpload = document.getElementById('imageUpload');
@@ -203,46 +185,42 @@
     const lifespanTxt = document.getElementById('lifespanTxt');
     const actionTxt = document.getElementById('actionTxt');
 
-    // Thứ tự nhãn đầu ra softmax của mô hình (Khớp với cấu trúc 3 units của bạn)
     const LABELS = ["Sạch (Clean)", "Bụi bẩn (Dusty)", "Nấm mốc (Moldy)"];
     let model;
 
- 
-        // 🚀 HÀM TẢI MÔ HÌNH THÔNG MINH - SỬA LỖI TREO NGẦM KERAS 3
+    // 🚀 HÀM VÁ LỖI CẤU TRÚC JSON KERAS 3 VÀ TẢI MÔ HÌNH
     async function loadModel() {
         let pathsToTry = ['./model.json', './models/model.json'];
         
         for (let path of pathsToTry) {
             try {
-                statusTxt.innerText = `⏳ Đang nạp tệp cấu trúc mô hình từ: ${path}...`;
+                statusTxt.innerText = `⏳ Đang đọc cấu trúc mô hình từ: ${path}...`;
                 
-                // 1. Tải file model.json dưới dạng văn bản thô để xử lý cấu trúc trước
                 const response = await fetch(path);
                 if (!response.ok) continue;
                 
                 const modelJsonText = await response.text();
                 
-                // 2. 🛠️ VÁ LỖI KHÔNG TƯƠNG THÍCH: Chuyển đổi định dạng Keras 3 về Keras 2 phù hợp với trình duyệt
+                // 🛠️ Xử lý chuỗi JSON: Loại bỏ tất cả thuộc tính "module": "keras" của Keras 3 gây đơ trình duyệt
                 let fixedJsonText = modelJsonText.replace(/"module":\s*"keras[^"]*"\s*,?/g, '');
                 fixedJsonText = fixedJsonText.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
                 
                 const patchedModelJson = JSON.parse(fixedJsonText);
-                
-                // 3. Khởi tạo đối tượng xử lý nạp tệp ảo của TensorFlow.js
                 const baseDir = path.substring(0, path.lastIndexOf('/')) || '.';
                 
+                // Trình nạp dữ liệu ảo (Virtual IOHandler) xử lý nạp file shard nhị phân
                 const ioHandler = {
                     load: async () => {
                         const weightDataPromises = patchedModelJson.weightsManifest.map(async (manifest) => {
                             const weightUrl = `${baseDir}/${manifest.paths}`;
                             const res = await fetch(weightUrl);
-                            if (!res.ok) throw new Error(`Không thể nạp file trọng số: ${weightUrl}`);
+                            if (!res.ok) throw new Error(`Không thể nạp file .bin: ${weightUrl}`);
                             return res.arrayBuffer();
                         });
                         
                         const weightBuffers = await Promise.all(weightDataPromises);
-                        
                         const combinedBuffer = new Uint8Array(weightBuffers.reduce((acc, buf) => acc + buf.byteLength, 0));
+                        
                         let offset = 0;
                         for (const buf of weightBuffers) {
                             combinedBuffer.set(new Uint8Array(buf), offset);
@@ -257,74 +235,40 @@
                     }
                 };
                 
-                // 4. Thực hiện nạp mô hình đã được sửa lỗi vào bộ nhớ trình duyệt
+                // Nạp mô hình đã vá lỗi vào TensorFlow.js
                 model = await tf.loadLayersModel(ioHandler);
                 
                 statusTxt.innerText = "✅ Hệ thống Edge AI đã sẵn sàng hoạt động!";
                 statusTxt.style.color = "var(--accent-success)";
-                return; // Thoát hàm ngay khi tải thành công
+                return; 
                 
             } catch (err) {
-                console.warn(`Thử nghiệm thất bại tại đường dẫn ${path}:`, err);
+                console.warn(`Đường dẫn ${path} không khả dụng, đang thử cấu trúc kế tiếp...`, err);
             }
         }
         
-        statusTxt.innerText = "❌ Lỗi: Không thể khởi tạo cấu trúc mạng nơ-ron do lỗi định dạng model.json.";
+        statusTxt.innerText = "❌ Lỗi: Không tìm thấy file model.json ở cả thư mục gốc lẫn thư mục models/.";
         statusTxt.style.color = "var(--accent-error)";
     }
 
-
-    // 2. Xử lý sự kiện Upload ảnh qua thẻ input
+    // Lắng nghe sự kiện người dùng chọn ảnh
     imageUpload.addEventListener('change', function(event) {
         const file = event.target.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 filterPreview.src = e.target.result;
-                previewContainer.style.display = "flex"; // Hiển thị khung chứa ảnh
+                previewContainer.style.display = "flex";
             };
             reader.readAsDataURL(file);
         }
     });
 
-    // 3. Tự động tính toán phân tích ngay khi ảnh được load xong vào cấu trúc DOM của img
+    // Tự động phân tích ảnh ngay khi ảnh được load xong vào thẻ <img>
     filterPreview.onload = async function() {
         if (!model) {
-            alert("Mô hình AI chưa được tải xong, vui lòng đợi trong giây lát!");
+            alert("Mô hình AI chưa được khởi tạo thành công!");
             return;
         }
 
         resultTxt.innerText = "Đang xử lý hình ảnh...";
-        lifespanTxt.innerText = "Đang tính toán...";
-        actionTxt.innerText = "Đang phân tích...";
-
-        // Thêm một khoảng trễ nhỏ 50ms giúp trình duyệt kịp dựng ảnh nhằm tránh lỗi treo luồng giao diện
-        setTimeout(async () => {
-            // 🛠️ Chuẩn hóa dữ liệu ảnh đầu vào khớp với cấu hình MobileNetV3Large của bạn [224, 224, 3]
-            let tensor = tf.browser.fromPixels(filterPreview)
-                .resizeNearestNeighbor([224, 224]) // Đưa về chuẩn kích thước 224x224 pixel
-                .toFloat()
-                .expandDims(0); // Thêm chiều batch_shape [null, 224, 224, 3] -> [1, 224, 224, 3]
-
-            // Thực hiện dự đoán
-            const prediction = await model.predict(tensor);
-            const predictionData = await prediction.data();
-
-            // Tìm nhãn có xác suất đầu ra Softmax lớn nhất
-            const highestIndex = predictionData.indexOf(Math.max(...predictionData));
-            const finalStatus = LABELS[highestIndex];
-
-            // Thiết lập các thông số dự đoán tuổi thọ & giải pháp xử lý tương ứng
-            let lifespan = "";
-            let action = "";
-
-            if (highestIndex === 0) { // Sạch (Clean)
-                lifespan = "Còn khoảng 2 - 3 tháng sử dụng tốt.";
-                action = "Bộ lọc rất sạch. Không cần thay thế, hãy tiếp tục kiểm định định kỳ sau 30 ngày.";
-                resultTxt.style.color = "var(--accent-success)";
-            } else if (highestIndex === 1) { // Bụi bẩn (Dusty)
-                lifespan = "Nên vệ sinh hoặc đổi mới trong vòng 1-2 tuần tới.";
-                action = "Hàm lượng bụi tích tụ cao. Khuyến nghị tháo màng lọc ra vệ sinh xịt rửa hoặc thay tấm lọc.";
-                resultTxt.style.color = "var(--accent-color)";
-            } else { // Nấm mốc (Moldy)
-                lifespan = "⚠️ ĐÃ HẾT HẠN SỬ DỤNG - NGUY HIỂM!";
