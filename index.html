@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI AC Filter Diagnostics</title>
-    <!-- Embedding the official production-grade TensorFlow.js distribution package via unpkg CDN -->
-    <script src="https://unpkg.com"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; text-align: center; background: #f5f7fa; padding: 20px; color: #333; }
         .container { max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
@@ -35,7 +33,7 @@
     
     <img id="imagePreview" alt="Filter Preview">
     
-    <div id="status">⏳ Initializing Deep Learning Core Component...</div>
+    <div id="status">⏳ Connecting to Secure Network Mirrors...</div>
     
     <div id="result-box">
         <p class="result-title" id="resCondition">Diagnostic Result: </p>
@@ -44,76 +42,92 @@
     </div>
 </div>
 
-<script>
+<!-- Using Native ES Module loading to completely sidestep classic script tags and route through premium network mirrors -->
+<script type="module">
+    let tf;
     let model;
     const CATEGORIES = ["Clean", "Dirty", "Moldy"]; 
 
-    /**
-     * Dual-Fall-Through execution pipeline mapping standard graph topologies directly from HTTPS mirrors
-     */
     async function initApp() {
-        if (typeof tf === 'undefined') {
-            document.getElementById('status').innerText = "❌ Runtime Error: TensorFlow.js core library failed to load.";
-            return;
-        }
-        
-        document.getElementById('status').innerText = "⏳ Connecting deep learning model structure...";
-        
-        // Target repository direct url definitions to prevent relative path resolve blockage
-        const targetUrl = 'https://githubusercontent.com';
-        
+        // Direct absolute HTTPS URLs to ensure your GitHub Pages file paths load reliably without context mapping errors
+        const targetModelUrl = 'https://githubusercontent.com';
+
         try {
-            console.log("⚡ Attempting deployment fallback 1: GraphModel parsing...");
-            // Switching execution algorithm to loadGraphModel to natively parse compiled optimized Colab graph structures
-            model = await tf.loadGraphModel(targetUrl);
-            unlockControls();
-        } catch (graphError) {
-            console.warn("⚠️ Fallback 1 failed. Triggering fallback 2: LayersModel structural parsing...", graphError);
+            document.getElementById('status').innerText = "⏳ Loading isolated computing layer...";
+            // Bypassing jsdelivr/unpkg entirely by fetching directly from unpkg's raw module registry mirrors
+            const tfModule = await import('https://unpkg.com');
+            tf = tfModule;
+            
+            document.getElementById('status').innerText = "⏳ Initializing deep learning neural paths...";
+            
+            // Running Dual-Fall-Through validation to parse model structure regardless of how Colab formatted it
             try {
-                // Secondary fallback array execution targeting standard sequential layers topologies
-                model = await tf.loadLayersModel(targetUrl);
-                unlockControls();
-            } catch (layersError) {
-                document.getElementById('status').innerText = "❌ IO Error: Failed to resolve model topology structures.";
-                console.error("Absolute pipeline failure:", layersError);
+                model = await tf.loadGraphModel(targetModelUrl);
+                console.log("Graph model configuration activated successfully.");
+            } catch (graphError) {
+                console.warn("Target architecture is not a GraphModel. Attempting LayersModel resolution...", graphError);
+                model = await tf.loadLayersModel(targetModelUrl);
+                console.log("Layers model configuration activated successfully.");
             }
+            
+            // Unlock UI controls immediately when the model engine comes online
+            const btn = document.getElementById('uploadBtn');
+            btn.disabled = false;
+            btn.style.background = "#0071e3";
+            btn.style.cursor = "pointer";
+            btn.innerText = "📸 Capture / Upload Filter Image";
+            btn.onclick = () => document.getElementById('fileInput').click();
+            
+            document.getElementById('status').innerText = "✅ Edge AI Engine is online. System ready for diagnostic scan.";
+        } catch (error) {
+            document.getElementById('status').innerText = "❌ Network Mirror Error. Attempting emergency fallback connection...";
+            console.error("Primary pipeline failed, launching structural emergency backup...", error);
+            await emergencyFallback(targetModelUrl);
         }
     }
 
-    /**
-     * Unlocks visual elements and interface controls instantly upon successful file stream mapping
-     */
-    function unlockControls() {
-        const btn = document.getElementById('uploadBtn');
-        btn.disabled = false;
-        btn.style.background = "#0071e3";
-        btn.style.cursor = "pointer";
-        btn.innerText = "📸 Capture / Upload Filter Image";
-        btn.onclick = () => document.getElementById('fileInput').click();
-        
-        document.getElementById('status').innerText = "✅ Edge AI Engine is online. System ready for diagnostic scan.";
+    // Emergency backup router that completely shifts traffic to a separate cloud server network (esm.sh) if unpkg remains timed out
+    async function emergencyFallback(modelUrl) {
+        try {
+            const backupModule = await import('https://esm.sh');
+            tf = backupModule;
+            try {
+                model = await tf.loadGraphModel(modelUrl);
+            } catch {
+                model = await tf.loadLayersModel(modelUrl);
+            }
+            const btn = document.getElementById('uploadBtn');
+            btn.disabled = false;
+            btn.style.background = "#0071e3";
+            btn.style.cursor = "pointer";
+            btn.innerText = "📸 Capture / Upload Filter Image";
+            btn.onclick = () => document.getElementById('fileInput').click();
+            document.getElementById('status').innerText = "✅ Edge AI Engine Online (Via Emergency Backup Connection).";
+        } catch (fallbackError) {
+            document.getElementById('status').innerText = "❌ Critical Core Error: All global network mirrors are currently blocked by your Internet Provider.";
+            console.error("Total system failure:", fallbackError);
+        }
     }
 
-    // Assigning event interceptors to DOM initialization lifecycle triggers
     window.addEventListener('DOMContentLoaded', initApp);
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
         if (!e.target.files || e.target.files.length === 0) {
-            document.getElementById('status').innerText = "⚠️ Validation Error: No file sequence detected.";
+            document.getElementById('status').innerText = "⚠️ Validation Error: No image stream picked.";
             return;
         }
 
-        const targetFile = e.target.files[0];
+        const targetFile = e.target.files[0]; // Safely parsing exactly the first discrete binary blob block 
         const reader = new FileReader();
         
         reader.onload = function(event) {
             const imgElement = document.getElementById('imagePreview');
             imgElement.src = event.target.result;
             imgElement.style.display = 'block';
-            document.getElementById('status').innerText = "⚡ Activating edge convolution grids and mapping image bitstreams...";
+            document.getElementById('status').innerText = "⚡ Analyzing pixel dimensions and allocating graphic grids...";
             
             imgElement.onload = async () => {
-                if (!model) return;
+                if (!model || !tf) return;
                 await runInference(imgElement);
             };
         }
@@ -121,8 +135,9 @@
     });
 
     async function runInference(imgElement) {
+        // Enforcing proper input grid scaling array maps to resize canvas arrays perfectly into 224x224 grids
         let tensor = tf.browser.fromPixels(imgElement)
-            .resizeNearestNeighbor([224, 224]) // Robust structural parameter padding mapping array inputs
+            .resizeNearestNeighbor([224, 224]) 
             .toFloat()
             .div(tf.scalar(255.0)) 
             .expandDims();
