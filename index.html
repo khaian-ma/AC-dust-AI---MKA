@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI AC Filter Diagnostics</title>
+    <!-- Nạp trực tiếp từ file tf.js cục bộ bạn vừa tải bằng máy tính, vĩnh viễn không bị chặn mạng -->
+    <script src="./tf.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; text-align: center; background: #f5f7fa; padding: 20px; color: #333; }
         .container { max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
@@ -42,69 +44,70 @@
     </div>
 </div>
 
-<!-- Đóng gói toàn bộ luồng xử lý AI khép kín dưới dạng ES Module trực tiếp trong index.html -->
-<script type="module">
-    let tf;
+<script>
     let model;
     const CATEGORIES = ["Clean", "Dirty", "Moldy"]; 
-    const targetModelUrl = 'https://githubusercontent.com';
+    // Đọc trực tiếp tệp tin mô hình ngay tại thư mục models nội bộ trong GitHub Pages của bạn
+    const targetModelUrl = './models/model.json';
 
     async function startApplicationPipeline() {
-        document.getElementById('status').innerText = "⏳ Loading isolated calculation core modules...";
+        // Kiểm tra xem file tf.js cục bộ đã được trình duyệt nhận diện thành công chưa
+        if (typeof tf === 'undefined') {
+            document.getElementById('status').innerText = "❌ Runtime Error: Local file 'tf.js' was not resolved inside target folder.";
+            return;
+        }
+        
+        document.getElementById('status').innerText = "⏳ Synchronizing embedded network layers...";
         
         try {
-            // Nạp trực tiếp module AI thông qua máy chủ bảo mật tối cao của Cloudflare (esm.run), loại bỏ 100% lỗi CORS và cú pháp ngoài
-            const mlCoreModule = await import('https://esm.run');
-            tf = mlCoreModule;
-            
-            document.getElementById('status').innerText = "⏳ Synchronizing neural weight layers...";
-            
-            // Cơ chế nạp dự phòng kép tự động thích ứng cấu trúc file tệp mô hình của bạn
+            // Nạp cấu trúc toán học đồ thị tối ưu đa nền tảng xuất từ Google Colab
+            model = await tf.loadGraphModel(targetModelUrl);
+            console.log("Graph engine connectivity verified.");
+            unlockInterface();
+        } catch (graphErr) {
             try {
-                model = await tf.loadGraphModel(targetModelUrl);
-                console.log("Graph engine connection established.");
-            } catch (graphErr) {
-                console.warn("Structural mismatch detected. Diverting to Layers model engine...", graphErr);
+                // Nhánh nạp dự phòng Layers nếu file tệp của bạn là hệ mô hình tuần tự cũ
                 model = await tf.loadLayersModel(targetModelUrl);
-                console.log("Layers engine connection established.");
+                console.log("Layers engine connectivity verified.");
+                unlockInterface();
+            } catch (layersErr) {
+                document.getElementById('status').innerText = "❌ IO Error: System weights path could not be resolved.";
+                console.error(layersErr);
             }
-            
-            // Kích hoạt nút bấm mở camera màu xanh dương rực rỡ ngay lập tức
-            const btn = document.getElementById('uploadBtn');
-            btn.disabled = false;
-            btn.style.background = "#0071e3";
-            btn.style.cursor = "pointer";
-            btn.innerText = "📸 Capture / Upload Filter Image";
-            btn.onclick = () => document.getElementById('fileInput').click();
-            
-            document.getElementById('status').innerText = "✅ Edge AI Engine is online. System ready for diagnostic scan.";
-            
-        } catch (primaryPipelineError) {
-            document.getElementById('status').innerText = "❌ Mirror network pipeline error. Re-routing connection arrays...";
-            console.error(primaryPipelineError);
         }
     }
 
-    // Gắn chu trình nạp khởi tạo lập tức khi cấu trúc DOM hoàn thành
+    function unlockInterface() {
+        const btn = document.getElementById('uploadBtn');
+        btn.disabled = false;
+        btn.style.background = "#0071e3";
+        btn.style.cursor = "pointer";
+        btn.innerText = "📸 Capture / Upload Filter Image";
+        btn.onclick = () => document.getElementById('fileInput').click();
+        
+        document.getElementById('status').innerText = "✅ Edge AI Engine is online. System ready for diagnostic scan.";
+    }
+
+    // Tự động kích hoạt kiểm tra ngay khi cấu trúc trang cây DOM hoàn thành dựng xong
     window.addEventListener('DOMContentLoaded', startApplicationPipeline);
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
         if (!e.target.files || e.target.files.length === 0) {
-            document.getElementById('status').innerText = "⚠️ Validation Error: Zero file data blocks received.";
+            document.getElementById('status').innerText = "⚠️ Validation Error: Null file sequence input.";
             return;
         }
 
-        const validBlobStream = e.target.files[0]; // Trích xuất chính xác 1 đối tượng file đơn lẻ để triệt tiêu lỗi Blob cũ
+        const validBlobStream = e.target.files[0]; // Trích xuất chính xác 1 đối tượng file ảnh đơn lẻ số 0 để tránh lỗi mảng Blob cũ
         const dataReader = new FileReader();
         
         dataReader.onload = function(event) {
             const imgElement = document.getElementById('imagePreview');
             imgElement.src = event.target.result;
             imgElement.style.display = 'block';
-            document.getElementById('status').innerText = "⚡ Allocating execution tensors and compiling local pixel weights...";
+            document.getElementById('status').innerText = "⚡ Allocating network execution tensors and compiling local pixel arrays...";
             
             imgElement.onload = async () => {
-                if (!model || !tf) return;
+                if (!model || typeof tf === 'undefined') return;
                 await runInference(imgElement);
             };
         }
@@ -112,9 +115,9 @@
     });
 
     async function runInference(imgElement) {
-        // Biến đổi hình ảnh sang ma trận Tensor kích thước 224x224 chuẩn đầu vào AI của bạn
+        // Biến đổi hình ảnh sang ma trận điểm ảnh Tensor kích thước 224x224 chuẩn đầu vào AI của bạn
         let tensorGrid = tf.browser.fromPixels(imgElement)
-            .resizeNearestNeighbor([224, 224]) // Điền mảng tham số rõ ràng chống mọi lỗi treo máy
+            .resizeNearestNeighbor([224, 224]) // Gắn chặt mảng kích thước cụ thể chống hoàn toàn lỗi đứng máy cũ
             .toFloat()
             .div(tf.scalar(255.0)) 
             .expandDims();
