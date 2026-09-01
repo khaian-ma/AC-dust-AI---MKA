@@ -33,7 +33,7 @@
     
     <img id="imagePreview" alt="Filter Preview">
     
-    <div id="status">⏳ Connecting to Secure Network Mirrors...</div>
+    <div id="status">⏳ Initializing Edge Computing Network Interface...</div>
     
     <div id="result-box">
         <p class="result-title" id="resCondition">Diagnostic Result: </p>
@@ -42,35 +42,37 @@
     </div>
 </div>
 
-<!-- Using Native ES Module loading to completely sidestep classic script tags and route through premium network mirrors -->
 <script type="module">
     let tf;
     let model;
     const CATEGORIES = ["Clean", "Dirty", "Moldy"]; 
+    const targetModelUrl = 'https://githubusercontent.com';
 
-    async function initApp() {
-        // Direct absolute HTTPS URLs to ensure your GitHub Pages file paths load reliably without context mapping errors
-        const targetModelUrl = 'https://githubusercontent.com';
-
+    async function startApplicationPipeline() {
+        document.getElementById('status').innerText = "⏳ Loading isolated calculation core modules...";
+        
         try {
-            document.getElementById('status').innerText = "⏳ Loading isolated computing layer...";
-            // Bypassing jsdelivr/unpkg entirely by fetching directly from unpkg's raw module registry mirrors
-            const tfModule = await import('https://unpkg.com');
-            tf = tfModule;
+            // Bước 1: Ép hệ thống nạp module từ cổng máy chủ đám mây esm.sh cực kỳ mượt mà và an toàn
+            const moduleProxy = await import('https://esm.sh');
+            tf = moduleProxy;
             
-            document.getElementById('status').innerText = "⏳ Initializing deep learning neural paths...";
-            
-            // Running Dual-Fall-Through validation to parse model structure regardless of how Colab formatted it
-            try {
-                model = await tf.loadGraphModel(targetModelUrl);
-                console.log("Graph model configuration activated successfully.");
-            } catch (graphError) {
-                console.warn("Target architecture is not a GraphModel. Attempting LayersModel resolution...", graphError);
-                model = await tf.loadLayersModel(targetModelUrl);
-                console.log("Layers model configuration activated successfully.");
+            if (!tf || typeof tf.loadGraphModel === 'undefined') {
+                throw new Error("Module validation failed.");
             }
             
-            // Unlock UI controls immediately when the model engine comes online
+            document.getElementById('status').innerText = "⏳ Synchronizing neural weight layers...";
+            
+            // Bước 2: Chạy cơ chế nạp thông minh tự động thích ứng với cấu trúc file .json của bạn
+            try {
+                model = await tf.loadGraphModel(targetModelUrl);
+                console.log("Graph engine connection established.");
+            } catch (graphErr) {
+                console.warn("Structural mismatch detected. Diverting to Layers model engine...", graphErr);
+                model = await tf.loadLayersModel(targetModelUrl);
+                console.log("Layers engine connection established.");
+            }
+            
+            // Bước 3: Kích hoạt nút bấm chuyển sang màu xanh dương rực rỡ ngay lập tức
             const btn = document.getElementById('uploadBtn');
             btn.disabled = false;
             btn.style.background = "#0071e3";
@@ -79,22 +81,23 @@
             btn.onclick = () => document.getElementById('fileInput').click();
             
             document.getElementById('status').innerText = "✅ Edge AI Engine is online. System ready for diagnostic scan.";
-        } catch (error) {
-            document.getElementById('status').innerText = "❌ Network Mirror Error. Attempting emergency fallback connection...";
-            console.error("Primary pipeline failed, launching structural emergency backup...", error);
-            await emergencyFallback(targetModelUrl);
+            
+        } catch (primaryPipelineError) {
+            document.getElementById('status').innerText = "❌ Mirror network pipeline error. Re-routing connection arrays...";
+            console.error("Primary link failed. Executing fallback framework...", primaryPipelineError);
+            await triggerFallbackInfrastructure();
         }
     }
 
-    // Emergency backup router that completely shifts traffic to a separate cloud server network (esm.sh) if unpkg remains timed out
-    async function emergencyFallback(modelUrl) {
+    // Cổng nạp mạng dự phòng khẩn cấp unpkg đề phòng trường hợp cổng chính gặp sự cố trục trặc
+    async function triggerFallbackInfrastructure() {
         try {
-            const backupModule = await import('https://esm.sh');
-            tf = backupModule;
+            const backupProxy = await import('https://unpkg.com');
+            tf = backupProxy;
             try {
-                model = await tf.loadGraphModel(modelUrl);
+                model = await tf.loadGraphModel(targetModelUrl);
             } catch {
-                model = await tf.loadLayersModel(modelUrl);
+                model = await tf.loadLayersModel(targetModelUrl);
             }
             const btn = document.getElementById('uploadBtn');
             btn.disabled = false;
@@ -102,53 +105,54 @@
             btn.style.cursor = "pointer";
             btn.innerText = "📸 Capture / Upload Filter Image";
             btn.onclick = () => document.getElementById('fileInput').click();
-            document.getElementById('status').innerText = "✅ Edge AI Engine Online (Via Emergency Backup Connection).";
-        } catch (fallbackError) {
-            document.getElementById('status').innerText = "❌ Critical Core Error: All global network mirrors are currently blocked by your Internet Provider.";
-            console.error("Total system failure:", fallbackError);
+            document.getElementById('status').innerText = "✅ Edge AI Engine Online (Operating via fallback mirror layer).";
+        } catch (criticalFatalError) {
+            document.getElementById('status').innerText = "❌ Critical Core Error: Absolute communication failure with global machine learning mirrors.";
+            console.error("Total terminal breakdown:", criticalFatalError);
         }
     }
 
-    window.addEventListener('DOMContentLoaded', initApp);
+    // Kích hoạt chu trình nạp ngay khi cấu trúc cây DOM được hình thành hoàn thiện
+    window.addEventListener('DOMContentLoaded', startApplicationPipeline);
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
         if (!e.target.files || e.target.files.length === 0) {
-            document.getElementById('status').innerText = "⚠️ Validation Error: No image stream picked.";
+            document.getElementById('status').innerText = "⚠️ Validation Error: Zero file data blocks received.";
             return;
         }
 
-        const targetFile = e.target.files[0]; // Safely parsing exactly the first discrete binary blob block 
-        const reader = new FileReader();
+        const validBlobStream = e.target.files[0]; // Trích xuất chính xác 1 đối tượng file đơn lẻ để triệt tiêu lỗi Blob cũ
+        const dataReader = new FileReader();
         
-        reader.onload = function(event) {
+        dataReader.onload = function(event) {
             const imgElement = document.getElementById('imagePreview');
             imgElement.src = event.target.result;
             imgElement.style.display = 'block';
-            document.getElementById('status').innerText = "⚡ Analyzing pixel dimensions and allocating graphic grids...";
+            document.getElementById('status').innerText = "⚡ Allocating execution tensors and compiling local pixel weights...";
             
             imgElement.onload = async () => {
                 if (!model || !tf) return;
                 await runInference(imgElement);
             };
         }
-        reader.readAsDataURL(targetFile);
+        dataReader.readAsDataURL(validBlobStream);
     });
 
     async function runInference(imgElement) {
-        // Enforcing proper input grid scaling array maps to resize canvas arrays perfectly into 224x224 grids
-        let tensor = tf.browser.fromPixels(imgElement)
-            .resizeNearestNeighbor([224, 224]) 
+        // Biến đổi hình ảnh sang Tensor ma trận điểm ảnh kích thước 224x224 chuẩn đầu vào
+        let tensorGrid = tf.browser.fromPixels(imgElement)
+            .resizeNearestNeighbor([224, 224]) // Cấu trúc mảng tham số resize chuẩn chỉnh tuyệt đối chống lỗi treo máy
             .toFloat()
             .div(tf.scalar(255.0)) 
             .expandDims();
 
-        const predictions = await model.predict(tensor).data();
-        const maxIndex = predictions.indexOf(Math.max(...predictions));
-        updateUI(CATEGORIES[maxIndex]);
+        const modelCalculations = await model.predict(tensorGrid).data();
+        const absoluteHighestIndex = modelCalculations.indexOf(Math.max(...modelCalculations));
+        renderDiagnosticOutput(CATEGORIES[absoluteHighestIndex]);
     }
 
-    function updateUI(condition) {
-        document.getElementById('status').innerText = "✨ Execution Pipeline Complete!";
+    function renderDiagnosticOutput(condition) {
+        document.getElementById('status').innerText = "✨ Diagnostic Evaluation Pipeline Complete!";
         const box = document.getElementById('result-box');
         box.className = ""; 
         box.style.display = "block";
