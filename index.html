@@ -1,27 +1,150 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI AC Filter Diagnostics</title>
-    <!-- Nạp trực tiếp từ file tf.js cục bộ bạn vừa tải bằng máy tính, vĩnh viễn không bị chặn mạng -->
-    <script src="./tf.js"></script>
+    <title>AC Filter Scanner - AI Diagnostic</title>
+    <!-- Nhúng Google Fonts để giao diện đẹp hơn -->
+    <link href="https://googleapis.com" rel="stylesheet">
+    
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; text-align: center; background: #f5f7fa; padding: 20px; color: #333; }
-        .container { max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        h1 { font-size: 26px; margin-bottom: 8px; color: #111; }
-        .subtitle { color: #666; font-size: 14px; margin-bottom: 25px; }
-        .btn-upload { background: #0071e3; color: white; padding: 16px 24px; border: none; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: 600; width: 100%; transition: background 0.2s; }
-        .btn-upload:hover { background: #0077ed; }
-        #imagePreview { max-width: 100%; max-height: 280px; display: none; margin: 25px auto 0; border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        #status { margin-top: 20px; font-size: 14px; color: #888; font-weight: 500; }
-        #result-box { margin-top: 25px; padding: 20px; border-radius: 14px; display: none; text-align: left; animation: slideUp 0.4s ease; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        .result-title { font-size: 20px; font-weight: 700; margin: 0 0 12px 0; }
-        .result-text { font-size: 14px; margin: 8px 0; line-height: 1.6; }
-        .clean { background: #e6f7ed; color: #137333; border: 1px solid #c3e6cb; }
-        .dirty { background: #fef7e0; color: #b06000; border: 1px solid #ffeeba; }
-        .moldy { background: #fce8e6; color: #c5221f; border: 1px solid #f5c6cb; }
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --accent-color: #58a6ff;
+            --accent-success: #2ea44f;
+            --accent-error: #da3633;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+            color: #ffffff;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 30px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            margin-bottom: 25px;
+        }
+
+        .upload-section:hover {
+            border-color: var(--accent-color);
+        }
+
+        .upload-btn {
+            background-color: #21262d;
+            border: 1px solid var(--border-color);
+            color: var(--accent-color);
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+        }
+
+        .upload-btn:hover {
+            background-color: #30363d;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .preview-container {
+            width: 100%;
+            max-height: 300px;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        #filterPreview {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+        }
+
+        .status-box {
+            background-color: #0d1117;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .status-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .result-item {
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-item strong {
+            color: #ffffff;
+        }
+
+        #resultTxt {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
     </style>
 </head>
 <body>
@@ -29,127 +152,125 @@
 <div class="container">
     <h1>🔍 AC Filter Scanner</h1>
     <div class="subtitle">Edge AI Diagnostic Web Application for HVAC Filter Condition Evaluation</div>
-    
-    <input type="file" id="fileInput" accept="image/*" capture="environment" style="display: none;">
-    <button class="btn-upload" id="uploadBtn" disabled style="background: #ccc; cursor: not-allowed;">📸 Loading System Assets...</button>
-    
-    <img id="imagePreview" alt="Filter Preview">
-    
-    <div id="status">⏳ Initializing Secure Edge Computing Interface...</div>
-    
-    <div id="result-box">
-        <p class="result-title" id="resCondition">Diagnostic Result: </p>
-        <p class="result-text"><strong>Estimated Lifespan:</strong> <span id="resLifespan"></span></p>
-        <p class="result-text"><strong>AI Recommended Action:</strong> <span id="resRecommend"></span></p>
+
+    <!-- Khu vực tương tác tải ảnh lên -->
+    <div class="upload-section" onclick="document.getElementById('imageUpload').click()">
+        <svg width="40" height="40" viewBox="0 0 16 16" fill="currentColor" style="color: var(--text-muted); margin-bottom: 10px;">
+            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+            <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+        </svg>
+        <div style="font-size: 14px; text-align: center;">Kéo thả hình ảnh vào đây hoặc nhấp để chọn file</div>
+        <button class="upload-btn">Chọn hình ảnh</button>
+        <input type="file" id="imageUpload" accept="image/*">
+    </div>
+
+    <!-- Khu vực hiển thị ảnh xem trước -->
+    <div class="preview-container" id="previewContainer">
+        <img id="filterPreview" alt="Filter Preview">
+    </div>
+
+    <!-- Bảng thông tin chẩn đoán kết quả AI -->
+    <div class="status-box">
+        <div class="status-title">Hệ thống chẩn đoán Edge AI</div>
+        
+        <div class="result-item">
+            <strong>Trạng thái hệ thống:</strong> <span id="statusTxt">Đang khởi tạo mô hình...</span>
+        </div>
+        <div class="result-item">
+            <strong>Tình trạng bộ lọc:</strong> <span id="resultTxt">Chưa có dữ liệu</span>
+        </div>
+        <div class="result-item">
+            <strong>Tuổi thọ dự kiến:</strong> <span id="lifespanTxt">Chưa xác định</span>
+        </div>
+        <div class="result-item">
+            <strong>Khuyến nghị từ AI:</strong> <span id="actionTxt">N/A</span>
+        </div>
     </div>
 </div>
 
+<!-- 📦 Nhúng thư viện TensorFlow.js Core chính thức -->
+<script src="https://jsdelivr.net"></script>
+
 <script>
+    const imageUpload = document.getElementById('imageUpload');
+    const filterPreview = document.getElementById('filterPreview');
+    const previewContainer = document.getElementById('previewContainer');
+    
+    const statusTxt = document.getElementById('statusTxt');
+    const resultTxt = document.getElementById('resultTxt');
+    const lifespanTxt = document.getElementById('lifespanTxt');
+    const actionTxt = document.getElementById('actionTxt');
+
+    // Thứ tự nhãn đầu ra softmax của mô hình (Khớp với cấu trúc 3 units của bạn)
+    const LABELS = ["Sạch (Clean)", "Bụi bẩn (Dusty)", "Nấm mốc (Moldy)"];
     let model;
-    const CATEGORIES = ["Clean", "Dirty", "Moldy"]; 
-    // Đọc trực tiếp tệp tin mô hình ngay tại thư mục models nội bộ trong GitHub Pages của bạn
-    const targetModelUrl = './models/model.json';
 
-    async function startApplicationPipeline() {
-        // Kiểm tra xem file tf.js cục bộ đã được trình duyệt nhận diện thành công chưa
-        if (typeof tf === 'undefined') {
-            document.getElementById('status').innerText = "❌ Runtime Error: Local file 'tf.js' was not resolved inside target folder.";
-            return;
-        }
-        
-        document.getElementById('status').innerText = "⏳ Synchronizing embedded network layers...";
-        
+    // 1. Tải mô hình AI lên trình duyệt
+    async function loadModel() {
         try {
-            // Nạp cấu trúc toán học đồ thị tối ưu đa nền tảng xuất từ Google Colab
-            model = await tf.loadGraphModel(targetModelUrl);
-            console.log("Graph engine connectivity verified.");
-            unlockInterface();
-        } catch (graphErr) {
-            try {
-                // Nhánh nạp dự phòng Layers nếu file tệp của bạn là hệ mô hình tuần tự cũ
-                model = await tf.loadLayersModel(targetModelUrl);
-                console.log("Layers engine connectivity verified.");
-                unlockInterface();
-            } catch (layersErr) {
-                document.getElementById('status').innerText = "❌ IO Error: System weights path could not be resolved.";
-                console.error(layersErr);
-            }
+            statusTxt.innerText = "⏳ Đang tải mô hình MobileNetV3...";
+            // Sử dụng đường dẫn tương đối './model.json' để tương thích tốt với GitHub Pages
+            model = await tf.loadLayersModel('./model.json');
+            statusTxt.innerText = "✅ Hệ thống AI đã sẵn sàng hoạt động!";
+            statusTxt.style.color = "var(--accent-success)";
+        } catch (error) {
+            console.error("Lỗi không thể tải mô hình:", error);
+            statusTxt.innerText = "❌ Lỗi tải mô hình AI. Vui lòng kiểm tra file model.json.";
+            statusTxt.style.color = "var(--accent-error)";
         }
     }
 
-    function unlockInterface() {
-        const btn = document.getElementById('uploadBtn');
-        btn.disabled = false;
-        btn.style.background = "#0071e3";
-        btn.style.cursor = "pointer";
-        btn.innerText = "📸 Capture / Upload Filter Image";
-        btn.onclick = () => document.getElementById('fileInput').click();
-        
-        document.getElementById('status').innerText = "✅ Edge AI Engine is online. System ready for diagnostic scan.";
-    }
-
-    // Tự động kích hoạt kiểm tra ngay khi cấu trúc trang cây DOM hoàn thành dựng xong
-    window.addEventListener('DOMContentLoaded', startApplicationPipeline);
-
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-        if (!e.target.files || e.target.files.length === 0) {
-            document.getElementById('status').innerText = "⚠️ Validation Error: Null file sequence input.";
-            return;
-        }
-
-        const validBlobStream = e.target.files[0]; // Trích xuất chính xác 1 đối tượng file ảnh đơn lẻ số 0 để tránh lỗi mảng Blob cũ
-        const dataReader = new FileReader();
-        
-        dataReader.onload = function(event) {
-            const imgElement = document.getElementById('imagePreview');
-            imgElement.src = event.target.result;
-            imgElement.style.display = 'block';
-            document.getElementById('status').innerText = "⚡ Allocating network execution tensors and compiling local pixel arrays...";
-            
-            imgElement.onload = async () => {
-                if (!model || typeof tf === 'undefined') return;
-                await runInference(imgElement);
+    // 2. Xử lý sự kiện Upload ảnh qua thẻ input
+    imageUpload.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                filterPreview.src = e.target.result;
+                previewContainer.style.display = "flex"; // Hiển thị khung chứa ảnh
             };
+            reader.readAsDataURL(file);
         }
-        dataReader.readAsDataURL(validBlobStream);
     });
 
-    async function runInference(imgElement) {
-        // Biến đổi hình ảnh sang ma trận điểm ảnh Tensor kích thước 224x224 chuẩn đầu vào AI của bạn
-        let tensorGrid = tf.browser.fromPixels(imgElement)
-            .resizeNearestNeighbor([224, 224]) // Gắn chặt mảng kích thước cụ thể chống hoàn toàn lỗi đứng máy cũ
-            .toFloat()
-            .div(tf.scalar(255.0)) 
-            .expandDims();
-
-        const modelCalculations = await model.predict(tensorGrid).data();
-        const absoluteHighestIndex = modelCalculations.indexOf(Math.max(...modelCalculations));
-        renderDiagnosticOutput(CATEGORIES[absoluteHighestIndex]);
-    }
-
-    function renderDiagnosticOutput(condition) {
-        document.getElementById('status').innerText = "✨ Diagnostic Evaluation Pipeline Complete!";
-        const box = document.getElementById('result-box');
-        box.className = ""; 
-        box.style.display = "block";
-
-        if (condition === "Clean") {
-            box.classList.add("clean");
-            document.getElementById('resCondition').innerText = "Status: Clean 🟢";
-            document.getElementById('resLifespan').innerText = "60 to 90 operational days remaining.";
-            document.getElementById('resRecommend').innerText = "The filtration layout is operating at peak energy efficiency. Regular structural baseline checks recommended in 30 days.";
-        } else if (condition === "Dirty") {
-            box.classList.add("dirty");
-            document.getElementById('resCondition').innerText = "Status: Heavy Accumulation 🟡";
-            document.getElementById('resLifespan').innerText = "0 days (Airflow rate significantly bottlenecked).";
-            document.getElementById('resRecommend').innerText = "Accumulated particulate obstructions identified. Mechanical wash or filtration module exchange highly advised.";
-        } else {
-            box.classList.add("moldy");
-            document.getElementById('resCondition').innerText = "Status: Biological Contamination 🔴 HAZARD";
-            document.getElementById('resLifespan').innerText = "0 days (Critical interior respiratory safety advisory).";
-            document.getElementById('resRecommend').innerText = "Active mold spores/pathogens identified on surface area meshes. Immediate disposal required. Clean cabinets before deploying replacements.";
+    // 3. Tự động tính toán phân tích ngay khi ảnh được load xong vào cấu trúc DOM của img
+    filterPreview.onload = async function() {
+        if (!model) {
+            alert("Mô hình AI chưa được tải xong, vui lòng đợi trong giây lát!");
+            return;
         }
-    }
-</script>
-</body>
-</html>
+
+        resultTxt.innerText = "Đang xử lý hình ảnh...";
+        lifespanTxt.innerText = "Đang tính toán...";
+        actionTxt.innerText = "Đang phân tích...";
+
+        // Thêm một khoảng trễ nhỏ 50ms giúp trình duyệt kịp dựng ảnh nhằm tránh lỗi treo luồng giao diện
+        setTimeout(async () => {
+            // 🛠️ Chuẩn hóa dữ liệu ảnh đầu vào khớp với cấu hình MobileNetV3Large của bạn [224, 224, 3]
+            let tensor = tf.browser.fromPixels(filterPreview)
+                .resizeNearestNeighbor([224, 224]) // Đưa về chuẩn kích thước 224x224 pixel
+                .toFloat()
+                .expandDims(0); // Thêm chiều batch_shape [null, 224, 224, 3] -> [1, 224, 224, 3]
+
+            // Thực hiện dự đoán
+            const prediction = await model.predict(tensor);
+            const predictionData = await prediction.data();
+
+            // Tìm nhãn có xác suất đầu ra Softmax lớn nhất
+            const highestIndex = predictionData.indexOf(Math.max(...predictionData));
+            const finalStatus = LABELS[highestIndex];
+
+            // Thiết lập các thông số dự đoán tuổi thọ & giải pháp xử lý tương ứng
+            let lifespan = "";
+            let action = "";
+
+            if (highestIndex === 0) { // Sạch (Clean)
+                lifespan = "Còn khoảng 2 - 3 tháng sử dụng tốt.";
+                action = "Bộ lọc rất sạch. Không cần thay thế, hãy tiếp tục kiểm định định kỳ sau 30 ngày.";
+                resultTxt.style.color = "var(--accent-success)";
+            } else if (highestIndex === 1) { // Bụi bẩn (Dusty)
+                lifespan = "Nên vệ sinh hoặc đổi mới trong vòng 1-2 tuần tới.";
+                action = "Hàm lượng bụi tích tụ cao. Khuyến nghị tháo màng lọc ra vệ sinh xịt rửa hoặc thay tấm lọc.";
+                resultTxt.style.color = "var(--accent-color)";
+            } else { // Nấm mốc (Moldy)
+                lifespan = "⚠️ ĐÃ HẾT HẠN SỬ DỤNG - NGUY HIỂM!";
