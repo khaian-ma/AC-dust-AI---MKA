@@ -68,24 +68,34 @@
     // Tự động kích hoạt nạp ứng dụng sau khi giao diện dựng xong
     window.addEventListener('DOMContentLoaded', initApp);
 
-   document.getElementById('fileInput').addEventListener('change', function(e) {
-    const file = e.target.files[0]; 
-    if (!file) return;
+       // Robust file input event listener featuring array validation and single-file stream targeting
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        // Enforcing array check and ensuring at least one valid data stream exists in the buffer
+        if (!e.target.files || e.target.files.length === 0) {
+            document.getElementById('status').innerText = "⚠️ Validation Error: No file sequence detected in input stream.";
+            return;
+        }
+
+        // Directing the target memory mapping to extract only the first discrete file block (index 0)
+        const targetFile = e.target.files[0];
 
         const reader = new FileReader();
         reader.onload = function(event) {
             const imgElement = document.getElementById('imagePreview');
             imgElement.src = event.target.result;
             imgElement.style.display = 'block';
-            document.getElementById('status').innerText = "⚡ Đang tính toán dữ liệu hình ảnh...";
+            document.getElementById('status').innerText = " Activating edge convolution grids and mapping image bitstreams...";
             
             imgElement.onload = async () => {
                 if (!model) return;
                 await runInference(imgElement);
             };
         }
-        reader.readAsDataURL(file);
+        
+        // Safely executing data serialization on the validated single-file object parameter
+        reader.readAsDataURL(targetFile);
     });
+
 
     async function runInference(imgElement) {
         let tensor = tf.browser.fromPixels(imgElement)
