@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI AC Filter Diagnostics</title>
-    <!-- Nhúng lõi TensorFlow.js thông qua mạng phân phối cdnjs cực kỳ ổn định, chống chặn mạng 100% tại VN -->
-    <script src="https://cloudflare.com" crossorigin="anonymous"></script>
+    <!-- Hệ thống nạp tệp lõi JavaScript cục bộ nội bộ, cam kết không dính lỗi bảo mật mạng mạng CORS -->
+    <script src="./tf-bootstrap.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; text-align: center; background: #f5f7fa; padding: 20px; color: #333; }
         .container { max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
@@ -35,7 +35,7 @@
     
     <img id="imagePreview" alt="Filter Preview">
     
-    <div id="status">⏳ Initializing Secure Edge Computing Interface...</div>
+    <div id="status">⏳ Initializing Local Data Sandbox Environment...</div>
     
     <div id="result-box">
         <p class="result-title" id="resCondition">Diagnostic Result: </p>
@@ -50,29 +50,25 @@
     const targetModelUrl = 'https://githubusercontent.com';
 
     async function startApplicationPipeline() {
-        // Kiểm tra an toàn xem thư viện đã được tải thành công từ cdnjs chưa
+        // Kiểm tra an toàn xem lõi AI Base64 nội bộ đã giải nén thành công vào trình duyệt chưa
         if (typeof tf === 'undefined') {
-            document.getElementById('status').innerText = "❌ Runtime Error: Cloudflare Network Mirror was blocked by your ISP.";
+            document.getElementById('status').innerText = "❌ Runtime Error: Failed to unpack the internal AI memory array.";
             return;
         }
         
-        document.getElementById('status').innerText = "⏳ Synchronizing neural network matrices...";
+        document.getElementById('status').innerText = "⏳ Synchronizing embedded network layers...";
         
         try {
-            // Sử dụng cơ chế nạp thích ứng liên kết toán học đồ thị của Google Colab
+            // Nạp cấu trúc toán học thích ứng đa nền tảng
             model = await tf.loadGraphModel(targetModelUrl);
-            console.log("Graph engine connectivity verified.");
             unlockInterface();
         } catch (graphErr) {
-            console.warn("Structural matrix divergence detected. Switching to sequential layers interpreter...", graphErr);
             try {
-                // Nhánh nạp dự phòng Layers nếu file thuộc hệ cấu trúc mạng Keras cũ
                 model = await tf.loadLayersModel(targetModelUrl);
-                console.log("Layers engine connectivity verified.");
                 unlockInterface();
             } catch (layersErr) {
-                document.getElementById('status').innerText = "❌ IO Error: Failed to unpack the AI model weights.";
-                console.error("Critical structural failure:", layersErr);
+                document.getElementById('status').innerText = "❌ IO Error: System weights path could not be resolved.";
+                console.error(layersErr);
             }
         }
     }
@@ -88,16 +84,16 @@
         document.getElementById('status').innerText = "✅ Edge AI Engine is online. System ready for diagnostic scan.";
     }
 
-    // Gắn chu trình kích hoạt vào tiến trình tải trang Web hoàn thiện
+    // Tự động kích hoạt kiểm tra sau khi cấu trúc cây DOM sẵn sàng
     window.addEventListener('DOMContentLoaded', startApplicationPipeline);
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
         if (!e.target.files || e.target.files.length === 0) {
-            document.getElementById('status').innerText = "⚠️ Validation Error: No image stream selected.";
+            document.getElementById('status').innerText = "⚠️ Validation Error: Null file sequence input.";
             return;
         }
 
-        const validBlobStream = e.target.files[0]; // Trích xuất chính xác phần tử ảnh đơn lẻ đầu tiên chống lỗi Blob
+        const validBlobStream = e.target.files[0]; 
         const dataReader = new FileReader();
         
         dataReader.onload = function(event) {
@@ -115,9 +111,8 @@
     });
 
     async function runInference(imgElement) {
-        // Chuyển đổi dữ liệu ảnh thành cấu trúc Tensor ma trận 224x224 chuẩn hóa phần tử về khoảng 0-1
         let tensorGrid = tf.browser.fromPixels(imgElement)
-            .resizeNearestNeighbor([224, 224]) // Điền mảng tham số rõ ràng triệt tiêu hoàn toàn lỗi treo máy cũ
+            .resizeNearestNeighbor([224, 224]) 
             .toFloat()
             .div(tf.scalar(255.0)) 
             .expandDims();
