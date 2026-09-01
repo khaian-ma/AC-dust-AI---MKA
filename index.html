@@ -1,13 +1,9 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AC Filter Scanner</title>
-           <!-- Đã sửa: Ép trình duyệt kích hoạt chế độ Module để đọc mượt mà lệnh import bên trong file tf.js -->
-    <script type="module" src="./tf.js"></script>
-
-
+    <title>AI AC Filter Diagnostics</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; text-align: center; background: #f5f7fa; padding: 20px; color: #333; }
         .container { max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
@@ -29,79 +25,82 @@
 <body>
 
 <div class="container">
-    <h1>🔍 Máy Quét Lưới Lọc AC</h1>
-    <div class="subtitle">Ứng dụng AI phân tích sức khỏe và tuổi thọ bộ lọc không khí</div>
+    <h1>🔍 AC Filter Scanner</h1>
+    <div class="subtitle">Edge AI Diagnostic Web Application for HVAC Filter Condition Evaluation</div>
     
     <input type="file" id="fileInput" accept="image/*" capture="environment" style="display: none;">
-    <button class="btn-upload" onclick="document.getElementById('fileInput').click()">📸 Chụp Hoặc Tải Ảnh Lưới Lọc</button>
+    <button class="btn-upload" id="uploadBtn" disabled style="background: #ccc; cursor: not-allowed;">📸 Loading System Assets...</button>
     
-    <img id="imagePreview" alt="Preview">
+    <img id="imagePreview" alt="Filter Preview">
     
-    <div id="status">⏳ Đang nạp hệ thống trí tuệ nhân tạo...</div>
+    <div id="status">⏳ Initializing Deep Learning Core Component...</div>
     
     <div id="result-box">
-        <p class="result-title" id="resCondition">Kết quả: </p>
-        <p class="result-text"><strong>Tuổi thọ dự kiến:</strong> <span id="resLifespan"></span></p>
-        <p class="result-text"><strong>Khuyến nghị từ AI:</strong> <span id="resRecommend"></span></p>
+        <p class="result-title" id="resCondition">Diagnostic Result: </p>
+        <p class="result-text"><strong>Estimated Lifespan:</strong> <span id="resLifespan"></span></p>
+        <p class="result-text"><strong>AI Recommended Action:</strong> <span id="resRecommend"></span></p>
     </div>
 </div>
 
-<script>
+<!-- Combined ES Module Execution Framework to completely resolve CORS, CSP, and variable scoping conflicts -->
+<script type="module">
+    // Direct modular package fetch via highly available production mirrors
+    import * as tf from 'https://jsdelivr.net';
+    
     let model;
     const CATEGORIES = ["Clean", "Dirty", "Moldy"]; 
 
     async function initApp() {
-        if (typeof tf === 'undefined') {
-            document.getElementById('status').innerText = "❌ Lỗi: Không thể kết nối với thư viện TensorFlow.js từ mạng Internet.";
-            return;
-        }
-        
-        document.getElementById('status').innerText = "⏳ Đang kết nối mô hình tệp mạng...";
+        document.getElementById('status').innerText = "⏳ Streaming deep learning model layers...";
         try {
-            // Chỉ đường dẫn trực tiếp tới file model.json lưu trong thư mục models của bạn
+            // Resolving the topology directly from the target relative structure folder
             model = await tf.loadLayersModel('./models/model.json');
-            document.getElementById('status').innerText = "✅ AI đã sẵn sàng! Hãy chọn ảnh quét bộ lọc.";
+            
+            // Unlocking interface controls instantly upon absolute successful execution mapping
+            const btn = document.getElementById('uploadBtn');
+            btn.disabled = false;
+            btn.style.background = "#0071e3";
+            btn.style.cursor = "pointer";
+            btn.innerText = "📸 Capture / Upload Filter Image";
+            btn.onclick = () => document.getElementById('fileInput').click();
+            
+            document.getElementById('status').innerText = "✅ Edge AI Engine is online. System ready for diagnostic scan.";
         } catch (error) {
-            document.getElementById('status').innerText = "❌ Lỗi: Không tìm thấy tệp 'model.json' bên trong thư mục 'models'.";
+            document.getElementById('status').innerText = "❌ IO Error: Failed to resolve model assets in target folder.";
             console.error(error);
         }
     }
 
-    // Tự động kích hoạt nạp ứng dụng sau khi giao diện dựng xong
-    window.addEventListener('DOMContentLoaded', initApp);
+    // Direct initialization invocation inside the secure module thread execution layer
+    initApp();
 
-       // Robust file input event listener featuring array validation and single-file stream targeting
     document.getElementById('fileInput').addEventListener('change', function(e) {
-        // Enforcing array check and ensuring at least one valid data stream exists in the buffer
         if (!e.target.files || e.target.files.length === 0) {
-            document.getElementById('status').innerText = "⚠️ Validation Error: No file sequence detected in input stream.";
+            document.getElementById('status').innerText = "⚠️ Validation Error: No file sequence detected.";
             return;
         }
 
-        // Directing the target memory mapping to extract only the first discrete file block (index 0)
         const targetFile = e.target.files[0];
-
         const reader = new FileReader();
+        
         reader.onload = function(event) {
             const imgElement = document.getElementById('imagePreview');
             imgElement.src = event.target.result;
             imgElement.style.display = 'block';
-            document.getElementById('status').innerText = " Activating edge convolution grids and mapping image bitstreams...";
+            document.getElementById('status').innerText = "⚡ Activating edge convolution grids and mapping image bitstreams...";
             
             imgElement.onload = async () => {
                 if (!model) return;
                 await runInference(imgElement);
             };
         }
-        
-        // Safely executing data serialization on the validated single-file object parameter
         reader.readAsDataURL(targetFile);
     });
 
-
     async function runInference(imgElement) {
+        // Enforcing mathematical transform mappings to construct standardized input tensors
         let tensor = tf.browser.fromPixels(imgElement)
-            .resizeNearestNeighbor([224, 224]) // Ép kích thước ảnh khớp chuẩn đầu vào 224x224
+            .resizeNearestNeighbor([224, 224]) 
             .toFloat()
             .div(tf.scalar(255.0)) 
             .expandDims();
@@ -112,26 +111,26 @@
     }
 
     function updateUI(condition) {
-        document.getElementById('status').innerText = "✨ Phân tích hoàn tất!";
+        document.getElementById('status').innerText = "✨ Execution Pipeline Complete!";
         const box = document.getElementById('result-box');
         box.className = ""; 
         box.style.display = "block";
 
         if (condition === "Clean") {
             box.classList.add("clean");
-            document.getElementById('resCondition').innerText = "Kết quả: Sạch Sẽ 🟢";
-            document.getElementById('resLifespan').innerText = "Còn lại khoảng 60 - 90 ngày sử dụng.";
-            document.getElementById('resRecommend').innerText = "Hệ thống lọc khí đang ở trạng thái tối ưu. Không cần vệ sinh.";
+            document.getElementById('resCondition').innerText = "Status: Clean 🟢";
+            document.getElementById('resLifespan').innerText = "60 to 90 operational days remaining.";
+            document.getElementById('resRecommend').innerText = "The filtration layout is operating at peak energy efficiency. Regular structural baseline checks recommended in 30 days.";
         } else if (condition === "Dirty") {
             box.classList.add("dirty");
-            document.getElementById('resCondition').innerText = "Kết quả: Bám Bẩn Nhiều 🟡";
-            document.getElementById('resLifespan').innerText = "0 ngày (Hiệu suất giảm sâu).";
-            document.getElementById('resRecommend').innerText = "Lớp bụi bám dày đang gây cản gió. Hãy tháo lưới lọc ra rửa sạch.";
+            document.getElementById('resCondition').innerText = "Status: Heavy Accumulation 🟡";
+            document.getElementById('resLifespan').innerText = "0 days (Airflow rate significantly bottlenecked).";
+            document.getElementById('resRecommend').innerText = "Accumulated particulate obstructions identified. Mechanical wash or filtration module exchange highly advised.";
         } else {
             box.classList.add("moldy");
-            document.getElementById('resCondition').innerText = "Kết quả: Nhiễm Nấm Mốc 🔴 NGUY HIỂM";
-            document.getElementById('resLifespan').innerText = "0 ngày (Cảnh báo an toàn hô hấp).";
-            document.getElementById('resRecommend').innerText = "Phát hiện bào tử nấm mốc có hại. Hãy đeo khẩu trang và tháo bỏ lưới.";
+            document.getElementById('resCondition').innerText = "Status: Biological Contamination 🔴 HAZARD";
+            document.getElementById('resLifespan').innerText = "0 days (Critical interior respiratory safety advisory).";
+            document.getElementById('resRecommend').innerText = "Active mold spores/pathogens identified on surface area meshes. Immediate disposal required. Clean cabinets before deploying replacements.";
         }
     }
 </script>
