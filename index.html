@@ -68,9 +68,9 @@
     // Tự động kích hoạt nạp ứng dụng sau khi giao diện dựng xong
     window.addEventListener('DOMContentLoaded', initApp);
 
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-        const file = e.target.files;
-        if (!file) return;
+   document.getElementById('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0]; 
+    if (!file) return;
 
         const reader = new FileReader();
         reader.onload = function(event) {
