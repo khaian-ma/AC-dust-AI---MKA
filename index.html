@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI AC Filter Diagnostics</title>
+    <!-- Embedding the official production-grade TensorFlow.js distribution package via unpkg CDN -->
+    <script src="https://unpkg.com"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; text-align: center; background: #f5f7fa; padding: 20px; color: #333; }
         .container { max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
@@ -42,40 +44,58 @@
     </div>
 </div>
 
-<!-- Combined ES Module Execution Framework to completely resolve CORS, CSP, and variable scoping conflicts -->
-<script type="module">
-    // Direct modular package fetch via highly available production mirrors
-    import * as tf from 'https://jsdelivr.net';
-    
+<script>
     let model;
     const CATEGORIES = ["Clean", "Dirty", "Moldy"]; 
 
+    /**
+     * Dual-Fall-Through execution pipeline mapping standard graph topologies directly from HTTPS mirrors
+     */
     async function initApp() {
-        document.getElementById('status').innerText = "⏳ Streaming deep learning model layers...";
+        if (typeof tf === 'undefined') {
+            document.getElementById('status').innerText = "❌ Runtime Error: TensorFlow.js core library failed to load.";
+            return;
+        }
+        
+        document.getElementById('status').innerText = "⏳ Connecting deep learning model structure...";
+        
+        // Target repository direct url definitions to prevent relative path resolve blockage
+        const targetUrl = 'https://githubusercontent.com';
+        
         try {
-            // Ép trình duyệt gọi trực tiếp bằng liên kết HTTPS bảo mật tuyệt đối của máy chủ GitHub
-            model = await tf.loadLayersModel('https://githubusercontent.com');
-            
-            // Unlocking interface controls instantly upon absolute successful execution mapping
-
-            
-            // Unlocking interface controls instantly upon absolute successful execution mapping
-            const btn = document.getElementById('uploadBtn');
-            btn.disabled = false;
-            btn.style.background = "#0071e3";
-            btn.style.cursor = "pointer";
-            btn.innerText = "📸 Capture / Upload Filter Image";
-            btn.onclick = () => document.getElementById('fileInput').click();
-            
-            document.getElementById('status').innerText = "✅ Edge AI Engine is online. System ready for diagnostic scan.";
-        } catch (error) {
-            document.getElementById('status').innerText = "❌ IO Error: Failed to resolve model assets in target folder.";
-            console.error(error);
+            console.log("⚡ Attempting deployment fallback 1: GraphModel parsing...");
+            // Switching execution algorithm to loadGraphModel to natively parse compiled optimized Colab graph structures
+            model = await tf.loadGraphModel(targetUrl);
+            unlockControls();
+        } catch (graphError) {
+            console.warn("⚠️ Fallback 1 failed. Triggering fallback 2: LayersModel structural parsing...", graphError);
+            try {
+                // Secondary fallback array execution targeting standard sequential layers topologies
+                model = await tf.loadLayersModel(targetUrl);
+                unlockControls();
+            } catch (layersError) {
+                document.getElementById('status').innerText = "❌ IO Error: Failed to resolve model topology structures.";
+                console.error("Absolute pipeline failure:", layersError);
+            }
         }
     }
 
-    // Direct initialization invocation inside the secure module thread execution layer
-    initApp();
+    /**
+     * Unlocks visual elements and interface controls instantly upon successful file stream mapping
+     */
+    function unlockControls() {
+        const btn = document.getElementById('uploadBtn');
+        btn.disabled = false;
+        btn.style.background = "#0071e3";
+        btn.style.cursor = "pointer";
+        btn.innerText = "📸 Capture / Upload Filter Image";
+        btn.onclick = () => document.getElementById('fileInput').click();
+        
+        document.getElementById('status').innerText = "✅ Edge AI Engine is online. System ready for diagnostic scan.";
+    }
+
+    // Assigning event interceptors to DOM initialization lifecycle triggers
+    window.addEventListener('DOMContentLoaded', initApp);
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
         if (!e.target.files || e.target.files.length === 0) {
@@ -101,9 +121,8 @@
     });
 
     async function runInference(imgElement) {
-        // Enforcing mathematical transform mappings to construct standardized input tensors
         let tensor = tf.browser.fromPixels(imgElement)
-            .resizeNearestNeighbor([224, 224]) 
+            .resizeNearestNeighbor([224, 224]) // Robust structural parameter padding mapping array inputs
             .toFloat()
             .div(tf.scalar(255.0)) 
             .expandDims();
