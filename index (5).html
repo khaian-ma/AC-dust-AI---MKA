@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AC Filter Scanner - AI Diagnostic</title>
+    <!-- Favicon rỗng: tránh việc trình duyệt tự động xin favicon.ico và báo lỗi 404 vô hại trong Console -->
+    <link rel="icon" href="data:,">
+    <!-- Nhúng Google Fonts (đường dẫn thật, trỏ tới file CSS font Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --accent-color: #58a6ff;
+            --accent-success: #2ea44f;
+            --accent-error: #da3633;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+            color: #ffffff;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .upload-section {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 35px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            margin-bottom: 25px;
+        }
+
+        .upload-section:hover {
+            border-color: var(--accent-color);
+        }
+
+        .upload-btn {
+            background-color: #21262d;
+            border: 1px solid var(--border-color);
+            color: var(--accent-color);
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .preview-container {
+            width: 100%;
+            max-height: 300px;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        #filterPreview {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+        }
+
+        .status-box {
+            background-color: #0d1117;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .status-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .result-item {
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+
+        .result-item strong {
+            color: #ffffff;
+        }
+
+        #resultTxt {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔍 AC Filter Scanner</h1>
+    <div class="subtitle">Edge AI Diagnostic Web Application for HVAC Filter Condition Evaluation</div>
+
+    <div class="upload-section" onclick="document.getElementById('imageUpload').click()">
+        <svg width="40" height="40" viewBox="0 0 16 16" fill="currentColor" style="color: var(--text-muted); margin-bottom: 10px;">
+            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+            <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+        </svg>
+        <div style="font-size: 14px;">Kéo thả hình ảnh vào đây hoặc nhấp để chọn file</div>
+        <button class="upload-btn">Chọn hình ảnh</button>
+        <input type="file" id="imageUpload" accept="image/*">
+    </div>
+
+    <div class="preview-container" id="previewContainer">
+        <img id="filterPreview" alt="Filter Preview">
+    </div>
+
+    <div class="status-box">
+        <div class="status-title">Hệ thống chẩn đoán Edge AI</div>
+        <div class="result-item">
+            <strong>Trạng thái hệ thống:</strong> <span id="statusTxt">Đang khởi tạo mô hình...</span>
+        </div>
+        <div class="result-item">
+            <strong>Tình trạng bộ lọc:</strong> <span id="resultTxt">Chưa có dữ liệu</span>
+        </div>
+        <div class="result-item">
+            <strong>Tuổi thọ dự kiến:</strong> <span id="lifespanTxt">Chưa xác định</span>
+        </div>
+        <div class="result-item">
+            <strong>Khuyến nghị từ AI:</strong> <span id="actionTxt">N/A</span>
+        </div>
+    </div>
+</div>
+
+<!-- 📦 TensorFlow.js thật, từ CDN jsDelivr. Đây là link cần chính xác 100%,
+     bản trước trỏ nhầm vào trang chủ cloudflare.com nên "tf" không bao giờ tồn tại. -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+
+<script>
+    const imageUpload = document.getElementById('imageUpload');
+    const filterPreview = document.getElementById('filterPreview');
+    const previewContainer = document.getElementById('previewContainer');
+
+    const statusTxt = document.getElementById('statusTxt');
+    const resultTxt = document.getElementById('resultTxt');
+    const lifespanTxt = document.getElementById('lifespanTxt');
+    const actionTxt = document.getElementById('actionTxt');
+
+    // Thứ tự nhãn PHẢI khớp chính xác với thứ tự lớp lúc train model (class_indices)
+    const LABELS = ["Sạch (Clean)", "Bụi bẩn (Dusty)", "Nấm mốc (Moldy)"];
+
+    // ⚠️ Kích thước ảnh đầu vào model được train. Đây là giá trị phổ biến (MobileNet/EfficientNet),
+    // nhưng BẠN CẦN đổi lại đúng bằng input_shape thật của model (xem model.json -> modelTopology
+    // hoặc code Python lúc train, ví dụ ImageDataGenerator(target_size=(224,224))).
+    const IMG_SIZE = 224;
+
+    let model;
+
+    // ===== Các hàm vá lỗi tương thích Keras 3 -> TensorFlow.js =====
+    // (Đã được kiểm thử kỹ với cả model đơn giản lẫn model có backbone lồng nhau kiểu MobileNet)
+
+    // Keras 3 lưu thông tin kết nối giữa các layer (inbound_nodes) theo định dạng mới
+    // {args:[...], kwargs:{...}}, trong khi tfjs-layers chỉ hiểu định dạng cũ của Keras 2:
+    // [[ [tên_layer, chỉ_số_node, chỉ_số_tensor, kwargs] ]]. Hàm này chuyển đổi qua lại.
+    function convertInboundNodes(newInboundNodes) {
+        return newInboundNodes.map(node => {
+            const tensors = [];
+            function walk(arg) {
+                if (Array.isArray(arg)) arg.forEach(walk);
+                else if (arg && arg.class_name === '__keras_tensor__') tensors.push(arg.config.keras_history);
+            }
+            (node.args || []).forEach(walk);
+            const kwargs = node.kwargs || {};
+            return tensors.map(hist => [hist[0], hist[1], hist[2], kwargs]);
+        });
+    }
+    function normalizeIOList(x) {
+        // Keras 3 có thể trả về 1 bộ ba đơn ["tên", 0, 0] thay vì danh sách bọc ngoài [["tên",0,0]]
+        if (Array.isArray(x) && x.length > 0 && typeof x[0] === 'string') return [x];
+        return x;
+    }
+    function isNewInboundFormat(n) {
+        return Array.isArray(n) && n.length > 0 && !Array.isArray(n[0]) && typeof n[0] === 'object' && 'args' in n[0];
+    }
+    // Đệ quy toàn bộ cây layers (kể cả các submodel Functional/Sequential lồng bên trong,
+    // ví dụ một backbone MobileNet/EfficientNet được nhúng làm layer đầu tiên) để vá đồng loạt.
+    function fixKeras3GraphFormatRecursive(config) {
+        if (!config || !Array.isArray(config.layers)) return;
+        for (const layer of config.layers) {
+            if (layer.inbound_nodes && isNewInboundFormat(layer.inbound_nodes)) {
+                layer.inbound_nodes = convertInboundNodes(layer.inbound_nodes);
+            }
+            if (layer.config) {
+                if (layer.config.input_layers) layer.config.input_layers = normalizeIOList(layer.config.input_layers);
+                if (layer.config.output_layers) layer.config.output_layers = normalizeIOList(layer.config.output_layers);
+                fixKeras3GraphFormatRecursive(layer.config);
+            }
+        }
+        if (config.input_layers) config.input_layers = normalizeIOList(config.input_layers);
+        if (config.output_layers) config.output_layers = normalizeIOList(config.output_layers);
+    }
+    // Thu thập các layer "lá" (layer thực sự có trọng số, không phải submodel chứa layer khác),
+    // theo đúng thứ tự mà TensorFlow.js xây dựng model, để gán trọng số theo từng layer.
+    function collectLeafLayers(layer, out) {
+        if (layer.layers && Array.isArray(layer.layers) && layer.layers.length > 0) {
+            for (const sub of layer.layers) collectLeafLayers(sub, out);
+        } else {
+            out.push(layer);
+        }
+    }
+
+    // 🚀 HÀM VÁ LỖI CẤU TRÚC JSON KERAS 3 VÀ TẢI MÔ HÌNH
+    async function loadModel() {
+        let pathsToTry = ['./model.json', './models/model.json'];
+
+        for (let path of pathsToTry) {
+            try {
+                statusTxt.innerText = `⏳ Đang đọc cấu trúc mô hình từ: ${path}...`;
+
+                const response = await fetch(path);
+                if (!response.ok) continue;
+
+                const modelJsonText = await response.text();
+
+                // 🛠️ Loại bỏ thuộc tính "module": "keras..." của Keras 3 gây lỗi khi đọc trên trình duyệt
+                let fixedJsonText = modelJsonText.replace(/"module":\s*"keras[^"]*"\s*,?/g, '');
+                fixedJsonText = fixedJsonText.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+
+                // 🛠️ Keras 3 đổi tên khóa cấu hình InputLayer từ "batch_input_shape" thành "batch_shape",
+                // nhưng tfjs-layers chỉ hiểu tên cũ "batch_input_shape".
+                fixedJsonText = fixedJsonText.replace(/"batch_shape"/g, '"batch_input_shape"');
+
+                const patchedModelJson = JSON.parse(fixedJsonText);
+                const baseDir = path.substring(0, path.lastIndexOf('/')) || '.';
+
+                const modelConfigWrapper = patchedModelJson.modelTopology.model_config
+                    ? patchedModelJson.modelTopology.model_config
+                    : patchedModelJson.modelTopology;
+
+                // 🛠️ Vá định dạng đồ thị kết nối layer (quan trọng nếu model có backbone lồng nhau,
+                // ví dụ dùng transfer learning với MobileNet/EfficientNet làm layer đầu tiên)
+                fixKeras3GraphFormatRecursive(modelConfigWrapper.config);
+
+                // Bước 1: Xây dựng cấu trúc model (chưa có trọng số)
+                statusTxt.innerText = `⏳ Đang dựng cấu trúc mạng nơ-ron...`;
+                model = await tf.models.modelFromJSON(modelConfigWrapper);
+
+                // Bước 2: Tải toàn bộ file .bin trọng số (hỗ trợ cả trường hợp bị chia thành nhiều
+                // file shard như group1-shard1of3.bin, group1-shard2of3.bin, ... với model lớn)
+                statusTxt.innerText = `⏳ Đang tải trọng số mô hình...`;
+                const allSpecs = [];
+                const allBuffers = [];
+                for (const manifest of patchedModelJson.weightsManifest) {
+                    const shardBuffers = await Promise.all(manifest.paths.map(async (p) => {
+                        const res = await fetch(`${baseDir}/${p}`);
+                        if (!res.ok) throw new Error(`Không thể nạp file .bin: ${baseDir}/${p}`);
+                        return res.arrayBuffer();
+                    }));
+                    const totalLen = shardBuffers.reduce((acc, b) => acc + b.byteLength, 0);
+                    const combined = new Uint8Array(totalLen);
+                    let off = 0;
+                    for (const b of shardBuffers) { combined.set(new Uint8Array(b), off); off += b.byteLength; }
+                    allBuffers.push(combined.buffer);
+                    allSpecs.push(...manifest.weights);
+                }
+                const totalBytes = allBuffers.reduce((a, b) => a + b.byteLength, 0);
+                const fullBuffer = new Uint8Array(totalBytes);
+                let off2 = 0;
+                for (const b of allBuffers) { fullBuffer.set(new Uint8Array(b), off2); off2 += b.byteLength; }
+
+                // Bước 3: Giải mã trọng số, rồi GÁN THEO TỪNG LAYER (không theo tên đầy đủ),
+                // vì Keras 3 đôi khi đặt tên trọng số khác với tfjs-layers (vd "kernel" thay vì
+                // "depthwise_kernel" cho lớp DepthwiseConv2D). Khớp theo layer + đúng thứ tự bên
+                // trong layer đó thì đáng tin cậy hơn nhiều so với khớp tên tuyệt đối.
+                const decoded = tf.io.decodeWeights(fullBuffer.buffer, allSpecs);
+                const manifestByLayer = {};
+                for (const spec of allSpecs) {
+                    const parts = spec.name.split('/');
+                    const layerKey = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+                    if (!manifestByLayer[layerKey]) manifestByLayer[layerKey] = [];
+                    manifestByLayer[layerKey].push(decoded[spec.name]);
+                }
+
+                const leafLayers = [];
+                collectLeafLayers(model, leafLayers);
+
+                for (const layer of leafLayers) {
+                    const layerWeights = layer.weights;
+                    if (!layerWeights || layerWeights.length === 0) continue;
+                    const group = manifestByLayer[layer.name];
+                    if (!group || group.length !== layerWeights.length) {
+                        throw new Error(`Không khớp trọng số cho layer "${layer.name}" (cần ${layerWeights.length}, tìm thấy ${group ? group.length : 0})`);
+                    }
+                    layer.setWeights(group);
+                }
+
+                // "Làm nóng" model một lần để lần dự đoán đầu tiên của người dùng không bị lag
+                tf.tidy(() => {
+                    const warmup = tf.zeros([1, IMG_SIZE, IMG_SIZE, 3]);
+                    model.predict(warmup);
+                });
+
+                statusTxt.innerText = "✅ Hệ thống Edge AI đã sẵn sàng hoạt động!";
+                statusTxt.style.color = "var(--accent-success)";
+                return;
+
+            } catch (err) {
+                console.warn(`Đường dẫn ${path} không khả dụng, đang thử cấu trúc kế tiếp...`, err);
+            }
+        }
+
+        statusTxt.innerText = "❌ Lỗi: Không tìm thấy file model.json ở cả thư mục gốc lẫn thư mục models/.";
+        statusTxt.style.color = "var(--accent-error)";
+    }
+
+    // Chuyển ảnh <img> thành tensor đúng định dạng model cần: [1, IMG_SIZE, IMG_SIZE, 3], giá trị 0-1
+    function preprocessImage(imgElement) {
+        return tf.tidy(() => {
+            let tensor = tf.browser.fromPixels(imgElement)
+                .resizeNearestNeighbor([IMG_SIZE, IMG_SIZE])
+                .toFloat()
+                .div(tf.scalar(255)); // chuẩn hoá về [0,1] — đổi công thức này nếu lúc train bạn dùng cách khác (vd MobileNet preprocess -1..1)
+            return tensor.expandDims(0);
+        });
+    }
+
+    // Ước tính tuổi thọ còn lại + khuyến nghị dựa trên nhãn dự đoán
+    function getDiagnosis(label, confidence) {
+        switch (label) {
+            case LABELS[0]: // Sạch
+                return {
+                    lifespan: "~ 60-90 ngày sử dụng còn lại",
+                    action: "Bộ lọc đang sạch, chưa cần thay thế. Kiểm tra lại sau 1 tháng."
+                };
+            case LABELS[1]: // Bụi bẩn
+                return {
+                    lifespan: "~ 15-30 ngày trước khi cần thay",
+                    action: "Nên vệ sinh hoặc thay bộ lọc trong 2-4 tuần tới để tránh giảm hiệu suất."
+                };
+            case LABELS[2]: // Nấm mốc
+                return {
+                    lifespan: "Đã hết tuổi thọ an toàn",
+                    action: "⚠️ Cần thay bộ lọc ngay lập tức — nấm mốc có thể ảnh hưởng đến chất lượng không khí và sức khoẻ."
+                };
+            default:
+                return { lifespan: "Không xác định", action: "N/A" };
+        }
+    }
+
+    async function runPrediction() {
+        if (!model) {
+            resultTxt.innerText = "Model AI chưa sẵn sàng, vui lòng đợi hoặc tải lại trang.";
+            return;
+        }
+
+        try {
+            resultTxt.innerText = "Đang xử lý hình ảnh...";
+            lifespanTxt.innerText = "Đang phân tích...";
+            actionTxt.innerText = "...";
+
+            const inputTensor = preprocessImage(filterPreview);
+            const prediction = model.predict(inputTensor);
+            const scores = await prediction.data(); // Float32Array các xác suất, ví dụ [0.1, 0.7, 0.2]
+
+            inputTensor.dispose();
+            prediction.dispose();
+
+            // Tìm lớp có xác suất cao nhất
+            let maxIndex = 0;
+            for (let i = 1; i < scores.length; i++) {
+                if (scores[i] > scores[maxIndex]) maxIndex = i;
+            }
+
+            const label = LABELS[maxIndex];
+            const confidence = (scores[maxIndex] * 100).toFixed(1);
+            const diagnosis = getDiagnosis(label, confidence);
+
+            resultTxt.innerText = `${label} (độ tin cậy ${confidence}%)`;
+            lifespanTxt.innerText = diagnosis.lifespan;
+            actionTxt.innerText = diagnosis.action;
+
+        } catch (err) {
+            console.error("Lỗi khi dự đoán:", err);
+            resultTxt.innerText = "❌ Có lỗi xảy ra khi phân tích ảnh. Xem Console để biết chi tiết.";
+        }
+    }
+
+    // Lắng nghe sự kiện người dùng chọn ảnh
+    imageUpload.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                filterPreview.src = e.target.result;
+                previewContainer.style.display = "flex";
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Tự động phân tích ảnh ngay khi ảnh được load xong vào thẻ <img>
+    filterPreview.onload = function() {
+        if (!model) {
+            alert("Mô hình AI chưa được khởi tạo thành công! Vui lòng đợi hệ thống tải xong hoặc tải lại trang.");
+            return;
+        }
+        runPrediction();
+    };
+
+    // 🔑 Bước quan trọng nhất từng bị thiếu: thực sự GỌI loadModel() khi trang mở lên.
+    // Nếu không có dòng này, trạng thái sẽ mãi mãi đứng ở "Đang khởi tạo mô hình..."
+    window.addEventListener('DOMContentLoaded', loadModel);
+</script>
+
+</body>
+</html>
