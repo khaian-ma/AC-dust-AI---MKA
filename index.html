@@ -250,27 +250,36 @@
                     }
                 };
 
-                // Nạp mô hình đã vá lỗi vào TensorFlow.js
-                model = await tf.loadLayersModel(ioHandler);
-
-                // "Làm nóng" model một lần để lần dự đoán đầu tiên của người dùng không bị lag
-                tf.tidy(() => {
-                    const warmup = tf.zeros([1, IMG_SIZE, IMG_SIZE, 3]);
-                    model.predict(warmup);
-                });
-
-                statusTxt.innerText = "✅ Hệ thống Edge AI đã sẵn sàng hoạt động!";
-                statusTxt.style.color = "var(--accent-success)";
-                return;
-
-            } catch (err) {
-                console.warn(`Đường dẫn ${path} không khả dụng, đang thử cấu trúc kế tiếp...`, err);
+                        // ===== ĐOẠN CODE SỬA ĐỔI CHÈN VÀO TỪ DÒNG 253 =====
+        
+        // 1. Tạo đối tượng IOHandler ảo hoàn chỉnh theo chuẩn của TensorFlow.js
+        const finalIOHandler = {
+            load: async () => {
+                return {
+                    modelTopology: patchedModelJson.modelTopology,
+                    weightSpecs: patchedModelJson.weightsManifest[0].weights, // Lấy mảng weights đầu tiên
+                    weightData: combinedBuffer.buffer
+                };
             }
-        }
+        };
 
-        statusTxt.innerText = "❌ Lỗi: Không tìm thấy file model.json ở cả thư mục gốc lẫn thư mục models/.";
-        statusTxt.style.color = "var(--accent-error)";
+                // 2. Nạp trực tiếp cấu trúc đồ thị và bộ đệm trọng số vào biến model toàn cục
+        model = await tf.loadLayersModel(finalIOHandler);
+
+        statusTxt.innerText = " ✅ Hệ thống Edge AI đã sẵn sàng hoạt động!";
+        statusTxt.style.color = "var(--accent-success)";
+        console.log("🎉 Mô hình AI đã tải thành công!", model);
+        return; // Thoát hàm thành công, không chạy tiếp nữa
+
+    } catch (e) {
+        console.error(`Lỗi xảy ra khi xử lý dữ liệu tại đường dẫn ${path}:`, e);
     }
+} // Kết thúc vòng lặp for (danh sách pathsToTry)
+
+
+statusTxt.innerText = "❌ Lỗi: Không tìm thấy file model.json ở cả thư mục gốc lẫn thư mục models/.";
+statusTxt.style.color = "var(--accent-error)";
+}
 
     // Chuyển ảnh <img> thành tensor đúng định dạng model cần: [1, IMG_SIZE, IMG_SIZE, 3], giá trị 0-1
     function preprocessImage(imgElement) {
