@@ -252,6 +252,60 @@
     }
 
     // 🚀 HÀM VÁ LỖI CẤU TRÚC JSON KERAS 3 VÀ TẢI MÔ HÌNH
+
+    // ==========================================
+    // ĐOẠN MÃ BỔ SUNG ĐỂ SỬA LỖI 'hardSilu'
+   // ==========================================
+    import * as tf from '@tensorflow/tfjs';
+
+    // 1. Định nghĩa thuật toán Hard SiLU (X * ReLU6(X + 3) / 6)
+    class HardSiLU extends tf.layers.Layer {
+      constructor() {
+        super({});
+      }
+    
+      // Khai báo tên đăng ký trùng khớp với lỗi trong console
+      static get className() {
+        return 'hardSilu'; 
+      }
+
+      // Tính toán forward pass cho hàm kích hoạt
+      call(inputs) {
+        return tf.tidy(() => {
+          const x = inputs[0];
+          // Công thức tính toán Hard Swish / Hard SiLU
+          return x.mul(tf.clipByValue(x.add(3), 0, 6).div(6));
+        });
+      }
+
+      // Quy định shape của output giữ nguyên như input
+      computeOutputShape(inputShape) {
+        return inputShape;
+      }
+    }
+
+    // 2. Tiến hành đăng ký lớp này vào hệ thống Serialization của TFJS
+    tf.serialization.registerClass(HardSiLU);
+
+    // ==========================================
+    // ĐOẠN MÃ TẢI MÔ HÌNH (CẬP NHẬT)
+    // ==========================================
+async function loadModel() {
+  try {
+    // Bây giờ hệ thống đã nhận diện được 'hardSilu', mô hình sẽ tải thành công
+    const model = await tf.loadLayersModel('./models/model.json');
+    console.log("Tải mô hình thành công!");
+    return model;
+  } catch (error) {
+    console.error("Lỗi khi tải mô hình:", error);
+  }
+}
+
+// Thực hiện gọi hàm tải mô hình khi ứng dụng khởi chạy
+loadModel();
+
+
+    
     async function loadModel() {
         let pathsToTry = ['./model.json', './models/model.json'];
 
