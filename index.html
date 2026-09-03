@@ -118,48 +118,52 @@
     };
 
     // 🚀 HÀM NẠP MÔ HÌNH TRỰC TIẾP KHÔNG QUA LỆNH FETCH MẠNG
-    async function loadModel() {
+    // 🚀 ĐOẠN CODE THAY THẾ HÀM loadModel() ĐỂ SỬA DUY NHẤT LỖI CORB
+async function loadModel() {
+    let pathsToTry = ['./model.json', './models/model.json'];
+    
+    for (let path of pathsToTry) {
         try {
-            statusTxt.innerText = "⏳ Đang cấu trúc đồ thị tính toán từ bộ nhớ cục bộ...";
+            statusTxt.innerText = `⏳ Đang nạp cấu trúc mô hình từ: ${path}...`;
+            
+            // 1. Ép kiểu nạp thô văn bản để vượt qua bộ lọc CORB của Chrome
+            const response = await fetch(path, { method: 'GET', mode: 'cors' });
+            if (!response.ok) continue;
+            const modelJsonText = await response.text();
+            
+            // Dọn dẹp lỗi định dạng chuỗi Keras 3 nếu có
+            let fixedJsonText = modelJsonText.replace(/"module":\s*"keras[^"]*"\s*,?/g, '');
+            fixedJsonText = fixedJsonText.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+            const modelJsonParsed = JSON.parse(fixedJsonText);
 
-            if (!MY_MODEL_JSON.modelTopology && !MY_MODEL_JSON.format) {
-                statusTxt.innerText = "❌ Lỗi cấu hình: Bạn chưa dán nội dung file model.json vào biến MY_MODEL_JSON trong code.";
-                statusTxt.style.color = "var(--accent-error)";
-                return;
-            }
-
-            // Tạo một trình xử lý IO ảo để nạp trực tiếp Object JSON kết hợp nạp file shard1of1.bin cục bộ công nghệ cao
-            const ioHandler = {
-                load: async () => {
-                    // Tải tệp trọng số nhị phân (.bin) nằm cùng thư mục
-                    const weightUrl = './group1-shard1of1.bin'; 
-                    const res = await fetch(weightUrl);
-                    if (!res.ok) throw new Error(`Không thể tìm thấy file trọng số nhị phân tại: ${weightUrl}`);
-                    const weightBuffer = await res.arrayBuffer();
-                    
-                    return {
-                        modelTopology: MY_MODEL_JSON.modelTopology,
-                        weightSpecs: MY_MODEL_JSON.weightsManifest ? MY_MODEL_JSON.weightsManifest.flatMap(m => m.weights) : [],
-                        weightData: weightBuffer
-                    };
-                }
-            };
-
-            // Nạp mô hình vào TensorFlow.js (Sử dụng cấu trúc Graph hoặc Layers tùy biến tự động)
-            if (MY_MODEL_JSON.modelTopology && MY_MODEL_JSON.modelTopology.node) {
-                model = await tf.loadGraphModel(ioHandler);
+            // 2. 🛠️ BẺ GÃY CORB: Biến chuỗi văn bản thành một đối tượng Blob ảo nội bộ
+            // Trình duyệt sẽ đọc file trực tiếp từ RAM máy tính thay vì gọi qua URL mạng mạng GitHub
+            const blob = new Blob([JSON.stringify(modelJsonParsed)], { type: 'application/json' });
+            const objectUrl = URL.createObjectURL(blob);
+            
+            // 3. Tiến hành nạp mô hình thông qua Object URL vừa khởi tạo
+            // Tự động nhận diện cấu trúc Graph Model hoặc Layers Model của bạn
+            if (modelJsonParsed.modelTopology && modelJsonParsed.modelTopology.node) {
+                model = await tf.loadGraphModel(objectUrl);
             } else {
-                model = await tf.loadLayersModel(ioHandler);
+                model = await tf.loadLayersModel(objectUrl);
             }
             
+            // Giải phóng bộ nhớ đệm Object URL sau khi nạp thành công
+            URL.revokeObjectURL(objectUrl);
+
             statusTxt.innerText = "✅ Hệ thống AI đã sẵn sàng hoạt động!";
             statusTxt.style.color = "var(--accent-success)";
+            return; // Thành công thì thoát luồng ngay lập tức
         } catch (err) {
-            console.error("Lỗi khởi tạo hệ thống:", err);
-            statusTxt.innerText = "❌ Lỗi: Không thể khởi tạo mô hình AI do cấu trúc file .bin chưa khớp.";
-            statusTxt.style.color = "var(--accent-error)";
+            console.warn(`Đường dẫn ${path} bị chặn hoặc không khớp cấu trúc, đang quét tiếp...`, err);
         }
     }
+    
+    statusTxt.innerText = "❌ Lỗi: Không thể khởi tạo mô hình do cơ chế bảo mật CORB của trình duyệt.";
+    statusTxt.style.color = "var(--accent-error)";
+}
+
 
     imageUpload.addEventListener('change', function(event) {
         const file = event.target.files[0];
