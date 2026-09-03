@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AC Filter Scanner</title>
+
+  <!-- Official TensorFlow.js build -->
+  <script src="./tf.min.js"></script>
+</head>
+<body>
+  <h1>AC Filter Scanner</h1>
+
+  <div>
+    <strong>Trạng thái hệ thống:</strong>
+    <span id="status">Đang tải mô hình AI...</span>
+  </div>
+  <br>
+
+  <input type="file" id="imageLoader" accept="image/*" disabled>
+  <br><br>
+
+  <img id="previewImage" style="max-width: 300px; display: none;" alt="Preview">
+
+  <h3>Kết quả phân tích từ AI:</h3>
+  <pre id="output" style="background: #f0f0f0; padding: 10px;">Chờ upload ảnh...</pre>
+
+  <script>
+    const CLASS_NAMES = ["clean", "dusty", "mold"];
+    const MODEL_PATHS = ["./model.json", "./models/model.json"];
+
+    let model = null;
+    let currentObjectUrl = null;
+
+    const statusElement = document.getElementById("status");
+    const fileInput = document.getElementById("imageLoader");
+    const previewImage = document.getElementById("previewImage");
+    const outputElement = document.getElementById("output");
+
+    function setStatus(message, color) {
+      statusElement.textContent = message;
+      statusElement.style.color = color;
+    }
+
+    async function loadAIModel() {
+      if (typeof tf === "undefined") {
+        throw new Error("TensorFlow.js did not load.");
+      }
+
+      let lastError = null;
+
+      for (const path of MODEL_PATHS) {
+        try {
+          setStatus("Đang tải mô hình AI...", "black");
+          model = await tf.loadLayersModel(path);
+
+          setStatus("Mô hình đã sẵn sàng! Hãy upload ảnh.", "green");
+          fileInput.disabled = false;
+
+          console.log("AI model loaded from:", path);
+          console.log("Model input shape:", model.inputs[0].shape);
+          console.log("Model output shape:", model.outputs[0].shape);
+          return;
+        } catch (error) {
+          console.warn("Could not load model from " + path, error);
+          lastError = error;
+        }
+      }
+
+      throw lastError || new Error("Model could not be loaded.");
+    }
+
+    function centerCropToSquare(image) {
+      const sourceSize = Math.min(image.naturalWidth, image.naturalHeight);
+      const sourceX = (image.naturalWidth - sourceSize) / 2;
+      const sourceY = (image.naturalHeight - sourceSize) / 2;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 224;
+      canvas.height = 224;
+
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      context.drawImage(
+        image,
+        sourceX,
+        sourceY,
+        sourceSize,
+        sourceSize,
+        0,
+        0,
+        224,
+        224
+      );
+
+      return canvas;
+    }
+
+    function getResultMessage(label, confidence) {
+      if (label === "clean") {
+        return [
+          "KẾT QUẢ: SẠCH",
+          "Độ tin cậy: " + confidence.toFixed(2) + "%",
+          "Tình trạng: Bộ lọc trông sạch theo dự đoán của mô hình."
+        ].join("\n");
+      }
+
+      if (label === "dusty") {
+        return [
+          "KẾT QUẢ: BÁM BỤI",
+          "Độ tin cậy: " + confidence.toFixed(2) + "%",
+          "Tình trạng: Có dấu hiệu bụi bẩn. Nên kiểm tra và vệ sinh hoặc thay bộ lọc."
+        ].join("\n");
+      }
+
+      return [
+        "KẾT QUẢ: MỐC",
+        "Độ tin cậy: " + confidence.toFixed(2) + "%",
+        "Tình trạng: Có dấu hiệu giống mốc theo dự đoán của mô hình. Nên kiểm tra trực tiếp và vệ sinh/thay bộ lọc."
+      ].join("\n");
+    }
+
+    function runInference(image) {
+      if (!model) {
+        throw new Error("Model has not loaded.");
+      }
+
+      const values = tf.tidy(() => {
+        const canvas = centerCropToSquare(image);
+
+        // The model itself already contains a Rescaling layer:
+        // scale = 1/127.5, offset = -1.
+        // Therefore the browser must provide raw 0-255 RGB values here.
+        const input = tf.browser
+          .fromPixels(canvas, 3)
+          .toFloat()
+          .expandDims(0);
+
+        const prediction = model.predict(input);
+        const outputTensor = Array.isArray(prediction) ? prediction[0] : prediction;
+
+        return Array.from(outputTensor.dataSync());
+      });
+
+      return values;
+    }
+
+    fileInput.addEventListener("change", async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        outputElement.textContent = "Vui lòng chọn một file ảnh hợp lệ.";
+        return;
+      }
+
+      if (currentObjectUrl) {
+        URL.revokeObjectURL(currentObjectUrl);
+      }
+
+      currentObjectUrl = URL.createObjectURL(file);
+
+      previewImage.onload = async () => {
+        try {
+          outputElement.textContent = "AI đang phân tích ảnh...";
+
+          const scores = runInference(previewImage);
+          const predictedIndex = scores.indexOf(Math.max(...scores));
+          const label = CLASS_NAMES[predictedIndex];
+          const confidence = scores[predictedIndex] * 100;
+
+          if (!Number.isFinite(confidence)) {
+            throw new Error("The model returned an invalid prediction.");
+          }
+
+          outputElement.textContent = getResultMessage(label, confidence);
+          console.log("Raw model scores:", scores);
+          console.log("Prediction:", { label, confidence });
+        } catch (error) {
+          console.error("Inference failed:", error);
+          outputElement.textContent =
+            "Không thể phân tích ảnh. Chi tiết lỗi: " +
+            (error && error.message ? error.message : String(error));
+        }
+      };
+
+      previewImage.onerror = () => {
+        outputElement.textContent = "Không thể đọc ảnh đã chọn.";
+      };
+
+      previewImage.src = currentObjectUrl;
+      previewImage.style.display = "block";
+    });
+
+    window.addEventListener("beforeunload", () => {
+      if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+    });
+
+    loadAIModel().catch((error) => {
+      console.error("Model loading failed:", error);
+      setStatus(
+        "Không thể tải mô hình AI. Mở Console để xem lỗi chi tiết.",
+        "red"
+      );
+      outputElement.textContent =
+        "Lỗi tải mô hình: " +
+        (error && error.message ? error.message : String(error));
+      fileInput.disabled = true;
+    });
+  </script>
+</body>
+</html>
