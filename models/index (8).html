@@ -1,211 +1,216 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AC Filter Scanner</title>
-
-  <!-- Official TensorFlow.js build -->
-  <script src="./tf.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AC Filter Scanner - AI Diagnostic</title>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --accent-color: #58a6ff;
+            --accent-success: #2ea44f;
+            --accent-error: #da3633;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        h1 { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 8px; color: #ffffff; }
+        .subtitle { font-size: 14px; color: var(--text-muted); text-align: center; margin-bottom: 30px; }
+        .upload-section {
+            border: 2px dashed var(--border-color); border-radius: 8px; padding: 35px;
+            text-align: center; cursor: pointer; transition: border-color 0.2s; margin-bottom: 25px;
+        }
+        .upload-section:hover { border-color: var(--accent-color); }
+        .upload-btn {
+            background-color: #21262d; border: 1px solid var(--border-color); color: var(--accent-color);
+            padding: 10px 20px; font-size: 14px; font-weight: 600; border-radius: 6px; cursor: pointer; margin-top: 15px;
+        }
+        input[type="file"] { display: none; }
+        .preview-container {
+            width: 100%; max-height: 300px; display: none; justify-content: center; align-items: center;
+            margin-bottom: 25px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);
+        }
+        #filterPreview { max-width: 100%; max-height: 300px; object-fit: contain; }
+        .status-box { background-color: #0d1117; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; }
+        .status-title { font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; letter-spacing: 0.5px; }
+        .result-item { margin-bottom: 12px; font-size: 15px; }
+        .result-item strong { color: #ffffff; }
+        #resultTxt { font-weight: 600; color: var(--accent-color); }
+    </style>
 </head>
 <body>
-  <h1>AC Filter Scanner</h1>
 
-  <div>
-    <strong>Trạng thái hệ thống:</strong>
-    <span id="status">Đang tải mô hình AI...</span>
-  </div>
-  <br>
+<div class="container">
+    <h1>🔍 AC Filter Scanner</h1>
+    <div class="subtitle">Edge AI Diagnostic Web Application for HVAC Filter Condition Evaluation</div>
 
-  <input type="file" id="imageLoader" accept="image/*" disabled>
-  <br><br>
+    <div class="upload-section" onclick="document.getElementById('imageUpload').click()">
+        <svg width="40" height="40" viewBox="0 0 16 16" fill="currentColor" style="color: var(--text-muted); margin-bottom: 10px;">
+            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+            <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+        </svg>
+        <div style="font-size: 14px;">Kéo thả hình ảnh vào đây hoặc nhấp để chọn file</div>
+        <button class="upload-btn">Chọn hình ảnh</button>
+        <input type="file" id="imageUpload" accept="image/*">
+    </div>
 
-  <img id="previewImage" style="max-width: 300px; display: none;" alt="Preview">
+    <div class="preview-container" id="previewContainer">
+        <img id="filterPreview" alt="Filter Preview">
+    </div>
 
-  <h3>Kết quả phân tích từ AI:</h3>
-  <pre id="output" style="background: #f0f0f0; padding: 10px;">Chờ upload ảnh...</pre>
+    <div class="status-box">
+        <div class="status-title">Hệ thống chẩn đoán Edge AI</div>
+        <div class="result-item">
+            <strong>Trạng thái hệ thống:</strong> <span id="statusTxt">Đang khởi tạo mô hình...</span>
+        </div>
+        <div class="result-item">
+            <strong>Tình trạng bộ lọc:</strong> <span id="resultTxt">Chưa có dữ liệu</span>
+        </div>
+        <div class="result-item">
+            <strong>Tuổi thọ dự kiến:</strong> <span id="lifespanTxt">Chưa xác định</span>
+        </div>
+        <div class="result-item">
+            <strong>Khuyến nghị từ AI:</strong> <span id="actionTxt">N/A</span>
+        </div>
+    </div>
+</div>
 
-  <script>
-    const CLASS_NAMES = ["clean", "dusty", "mold"];
-    const MODEL_PATHS = ["./model.json", "./models/model.json"];
+<script src="https://cloudflare.com"></script>
 
-    let model = null;
-    let currentObjectUrl = null;
+<script>
+    const imageUpload = document.getElementById('imageUpload');
+    const filterPreview = document.getElementById('filterPreview');
+    const previewContainer = document.getElementById('previewContainer');
+    
+    const statusTxt = document.getElementById('statusTxt');
+    const resultTxt = document.getElementById('resultTxt');
+    const lifespanTxt = document.getElementById('lifespanTxt');
+    const actionTxt = document.getElementById('actionTxt');
 
-    const statusElement = document.getElementById("status");
-    const fileInput = document.getElementById("imageLoader");
-    const previewImage = document.getElementById("previewImage");
-    const outputElement = document.getElementById("output");
+    const LABELS = ["Sạch (Clean)", "Bụi bẩn (Dusty)", "Nấm mốc (Moldy)"];
+    let model;
 
-    function setStatus(message, color) {
-      statusElement.textContent = message;
-      statusElement.style.color = color;
-    }
+    // 🌟 BƯỚC 1: DÁN TOÀN BỘ NỘI DUNG FILE MODEL.JSON CỦA BẠN VÀO TRONG DẤU NGOẶC NHỌN ĐỂ TRÁNH LỖI CORB
+    const MY_MODEL_JSON = {
+        // Hãy xóa dấu ngoặc nhọn trống này và DÁN (Paste) toàn bộ văn bản trong file model.json của bạn vào đây
+    };
 
-    async function loadAIModel() {
-      if (typeof tf === "undefined") {
-        throw new Error("TensorFlow.js did not load.");
-      }
-
-      let lastError = null;
-
-      for (const path of MODEL_PATHS) {
+    // 🚀 HÀM NẠP MÔ HÌNH TRỰC TIẾP KHÔNG QUA LỆNH FETCH MẠNG
+    async function loadModel() {
         try {
-          setStatus("Đang tải mô hình AI...", "black");
-          model = await tf.loadLayersModel(path);
+            statusTxt.innerText = "⏳ Đang cấu trúc đồ thị tính toán từ bộ nhớ cục bộ...";
 
-          setStatus("Mô hình đã sẵn sàng! Hãy upload ảnh.", "green");
-          fileInput.disabled = false;
+            if (!MY_MODEL_JSON.modelTopology && !MY_MODEL_JSON.format) {
+                statusTxt.innerText = "❌ Lỗi cấu hình: Bạn chưa dán nội dung file model.json vào biến MY_MODEL_JSON trong code.";
+                statusTxt.style.color = "var(--accent-error)";
+                return;
+            }
 
-          console.log("AI model loaded from:", path);
-          console.log("Model input shape:", model.inputs[0].shape);
-          console.log("Model output shape:", model.outputs[0].shape);
-          return;
-        } catch (error) {
-          console.warn("Could not load model from " + path, error);
-          lastError = error;
+            // Tạo một trình xử lý IO ảo để nạp trực tiếp Object JSON kết hợp nạp file shard1of1.bin cục bộ công nghệ cao
+            const ioHandler = {
+                load: async () => {
+                    // Tải tệp trọng số nhị phân (.bin) nằm cùng thư mục
+                    const weightUrl = './group1-shard1of1.bin'; 
+                    const res = await fetch(weightUrl);
+                    if (!res.ok) throw new Error(`Không thể tìm thấy file trọng số nhị phân tại: ${weightUrl}`);
+                    const weightBuffer = await res.arrayBuffer();
+                    
+                    return {
+                        modelTopology: MY_MODEL_JSON.modelTopology,
+                        weightSpecs: MY_MODEL_JSON.weightsManifest ? MY_MODEL_JSON.weightsManifest.flatMap(m => m.weights) : [],
+                        weightData: weightBuffer
+                    };
+                }
+            };
+
+            // Nạp mô hình vào TensorFlow.js (Sử dụng cấu trúc Graph hoặc Layers tùy biến tự động)
+            if (MY_MODEL_JSON.modelTopology && MY_MODEL_JSON.modelTopology.node) {
+                model = await tf.loadGraphModel(ioHandler);
+            } else {
+                model = await tf.loadLayersModel(ioHandler);
+            }
+            
+            statusTxt.innerText = "✅ Hệ thống AI đã sẵn sàng hoạt động!";
+            statusTxt.style.color = "var(--accent-success)";
+        } catch (err) {
+            console.error("Lỗi khởi tạo hệ thống:", err);
+            statusTxt.innerText = "❌ Lỗi: Không thể khởi tạo mô hình AI do cấu trúc file .bin chưa khớp.";
+            statusTxt.style.color = "var(--accent-error)";
         }
-      }
-
-      throw lastError || new Error("Model could not be loaded.");
     }
 
-    function centerCropToSquare(image) {
-      const sourceSize = Math.min(image.naturalWidth, image.naturalHeight);
-      const sourceX = (image.naturalWidth - sourceSize) / 2;
-      const sourceY = (image.naturalHeight - sourceSize) / 2;
-
-      const canvas = document.createElement("canvas");
-      canvas.width = 224;
-      canvas.height = 224;
-
-      const context = canvas.getContext("2d", { willReadFrequently: true });
-      context.drawImage(
-        image,
-        sourceX,
-        sourceY,
-        sourceSize,
-        sourceSize,
-        0,
-        0,
-        224,
-        224
-      );
-
-      return canvas;
-    }
-
-    function getResultMessage(label, confidence) {
-      if (label === "clean") {
-        return [
-          "KẾT QUẢ: SẠCH",
-          "Độ tin cậy: " + confidence.toFixed(2) + "%",
-          "Tình trạng: Bộ lọc trông sạch theo dự đoán của mô hình."
-        ].join("\n");
-      }
-
-      if (label === "dusty") {
-        return [
-          "KẾT QUẢ: BÁM BỤI",
-          "Độ tin cậy: " + confidence.toFixed(2) + "%",
-          "Tình trạng: Có dấu hiệu bụi bẩn. Nên kiểm tra và vệ sinh hoặc thay bộ lọc."
-        ].join("\n");
-      }
-
-      return [
-        "KẾT QUẢ: MỐC",
-        "Độ tin cậy: " + confidence.toFixed(2) + "%",
-        "Tình trạng: Có dấu hiệu giống mốc theo dự đoán của mô hình. Nên kiểm tra trực tiếp và vệ sinh/thay bộ lọc."
-      ].join("\n");
-    }
-
-    function runInference(image) {
-      if (!model) {
-        throw new Error("Model has not loaded.");
-      }
-
-      const values = tf.tidy(() => {
-        const canvas = centerCropToSquare(image);
-
-        // The model itself already contains a Rescaling layer:
-        // scale = 1/127.5, offset = -1.
-        // Therefore the browser must provide raw 0-255 RGB values here.
-        const input = tf.browser
-          .fromPixels(canvas, 3)
-          .toFloat()
-          .expandDims(0);
-
-        const prediction = model.predict(input);
-        const outputTensor = Array.isArray(prediction) ? prediction[0] : prediction;
-
-        return Array.from(outputTensor.dataSync());
-      });
-
-      return values;
-    }
-
-    fileInput.addEventListener("change", async (event) => {
-      const file = event.target.files && event.target.files[0];
-      if (!file) return;
-
-      if (!file.type.startsWith("image/")) {
-        outputElement.textContent = "Vui lòng chọn một file ảnh hợp lệ.";
-        return;
-      }
-
-      if (currentObjectUrl) {
-        URL.revokeObjectURL(currentObjectUrl);
-      }
-
-      currentObjectUrl = URL.createObjectURL(file);
-
-      previewImage.onload = async () => {
-        try {
-          outputElement.textContent = "AI đang phân tích ảnh...";
-
-          const scores = runInference(previewImage);
-          const predictedIndex = scores.indexOf(Math.max(...scores));
-          const label = CLASS_NAMES[predictedIndex];
-          const confidence = scores[predictedIndex] * 100;
-
-          if (!Number.isFinite(confidence)) {
-            throw new Error("The model returned an invalid prediction.");
-          }
-
-          outputElement.textContent = getResultMessage(label, confidence);
-          console.log("Raw model scores:", scores);
-          console.log("Prediction:", { label, confidence });
-        } catch (error) {
-          console.error("Inference failed:", error);
-          outputElement.textContent =
-            "Không thể phân tích ảnh. Chi tiết lỗi: " +
-            (error && error.message ? error.message : String(error));
+    imageUpload.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                filterPreview.src = e.target.result;
+                previewContainer.style.display = "flex";
+            };
+            reader.readAsDataURL(file);
         }
-      };
-
-      previewImage.onerror = () => {
-        outputElement.textContent = "Không thể đọc ảnh đã chọn.";
-      };
-
-      previewImage.src = currentObjectUrl;
-      previewImage.style.display = "block";
     });
 
-    window.addEventListener("beforeunload", () => {
-      if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
-    });
+    filterPreview.onload = async function() {
+        if (!model) {
+            alert("Mô hình AI chưa được nạp xong!");
+            return;
+        }
 
-    loadAIModel().catch((error) => {
-      console.error("Model loading failed:", error);
-      setStatus(
-        "Không thể tải mô hình AI. Mở Console để xem lỗi chi tiết.",
-        "red"
-      );
-      outputElement.textContent =
-        "Lỗi tải mô hình: " +
-        (error && error.message ? error.message : String(error));
-      fileInput.disabled = true;
-    });
-  </script>
-</body>
-</html>
+        resultTxt.innerText = "Đang xử lý hình ảnh...";
+        lifespanTxt.innerText = "Đang tính toán...";
+        actionTxt.innerText = "Đang phân tích...";
+
+        setTimeout(async () => {
+            try {
+                let tensor = tf.browser.fromPixels(filterPreview)
+                    .resizeNearestNeighbor([224, 224]) 
+                    .toFloat()
+                    .div(tf.scalar(255.0)) 
+                    .expandDims(0);
+
+                const prediction = await model.predict(tensor);
+                const predictionData = await prediction.data();
+
+                const highestIndex = predictionData.indexOf(Math.max(...predictionData));
+                const finalStatus = LABELS[highestIndex];
+
+                let lifespan = "";
+                let action = "";
+
+                if (highestIndex === 0) {
+                    lifespan = "Còn khoảng 2 - 3 tháng sử dụng tốt.";
+                    action = "Bộ lọc rất sạch. Không cần thay thế, hãy tiếp tục kiểm định định kỳ sau 30 ngày.";
+                    resultTxt.style.color = "var(--accent-success)";
+                } else if (highestIndex === 1) {
+                    lifespan = "Nên vệ sinh hoặc đổi mới trong vòng 1-2 tuần tới.";
+                    action = "Hàm lượng bụi tích tụ cao. Khuyến nghị tháo màng lọc ra vệ sinh xịt rửa hoặc thay tấm lọc.";
+                    resultTxt.style.color = "var(--accent-color)";
+                } else {
+                    lifespan = "⚠️ ĐÃ HẾT HẠN SỬ DỤNG - NGUY HIỂM!";
+                    action = "Phát hiện bào tử nấm mốc nguy hại cho hô hấp. Hãy thay thế bộ lọc mới ngay lập tức.";
+                    resultTxt.style.color = "var(--accent-error)";
+                }
+
