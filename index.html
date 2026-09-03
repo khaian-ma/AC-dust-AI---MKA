@@ -97,7 +97,7 @@
     </div>
 </div>
 
-<!-- 📦 NHÚNG THƯ VIỆN TENSORFLOW THUẦN KHÔNG DÙNG MODULE ĐỂ PHÁ VỠ CORB -->
+<!-- 📦 SỬ DỤNG THƯ VIỆN CHUẨN TRUYỀN THỐNG QUA CDNJS KHÔNG DÙNG MODULE -->
 <script src="https://cloudflare.com"></script>
 
 <script>
@@ -113,7 +113,6 @@
     const LABELS = ["Sạch (Clean)", "Bụi bẩn (Dusty)", "Nấm mốc (Moldy)"];
     let model;
 
-    // 🚀 HÀM NẠP MÔ HÌNH KHÔNG BỊ TREO BỞI CORB
     async function loadModel() {
         let pathsToTry = ['./model.json', './models/model.json'];
         
@@ -121,21 +120,18 @@
             try {
                 statusTxt.innerText = `⏳ Đang đọc cấu trúc mô hình từ: ${path}...`;
                 
-                // Thực hiện nạp thô văn bản json
                 const response = await fetch(path);
                 if (!response.ok) continue;
                 const modelJsonText = await response.text();
                 
-                // Làm sạch các thẻ định danh của Keras 3 để tránh đơ luồng tính toán
                 let fixedJsonText = modelJsonText.replace(/"module":\s*"keras[^"]*"\s*,?/g, '');
                 fixedJsonText = fixedJsonText.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
                 const modelJsonParsed = JSON.parse(fixedJsonText);
 
-                // Biến đổi chuỗi thành đối tượng Blob bộ nhớ cục bộ để bypass hoàn toàn CORB
+                // Sử dụng cơ chế Blob nội bộ để phá vỡ hoàn toàn bộ lọc CORB của Chrome
                 const blob = new Blob([JSON.stringify(modelJsonParsed)], { type: 'application/json' });
                 const objectUrl = URL.createObjectURL(blob);
                 
-                // Nạp mô hình vào hệ thống
                 if (modelJsonParsed.modelTopology && modelJsonParsed.modelTopology.node) {
                     model = await tf.loadGraphModel(objectUrl);
                 } else {
@@ -221,6 +217,7 @@
         }, 50);
     };
 
-    // Kích hoạt nạp mô hình ngay khi trình duyệt quét qua script thuần
     loadModel();
 </script>
+</body>
+</html>
