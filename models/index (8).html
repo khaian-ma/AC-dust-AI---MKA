@@ -97,6 +97,7 @@
     </div>
 </div>
 
+<!-- 📦 NHÚNG THƯ VIỆN TENSORFLOW THUẦN KHÔNG DÙNG MODULE ĐỂ PHÁ VỠ CORB -->
 <script src="https://cloudflare.com"></script>
 
 <script>
@@ -112,61 +113,50 @@
     const LABELS = ["Sạch (Clean)", "Bụi bẩn (Dusty)", "Nấm mốc (Moldy)"];
     let model;
 
-    // 🌟 BƯỚC 1: DÁN TOÀN BỘ NỘI DUNG FILE MODEL.JSON CỦA BẠN VÀO TRONG DẤU NGOẶC NHỌN ĐỂ TRÁNH LỖI CORB
-    const MY_MODEL_JSON = {
-        // Hãy xóa dấu ngoặc nhọn trống này và DÁN (Paste) toàn bộ văn bản trong file model.json của bạn vào đây
-    };
+    // 🚀 HÀM NẠP MÔ HÌNH KHÔNG BỊ TREO BỞI CORB
+    async function loadModel() {
+        let pathsToTry = ['./model.json', './models/model.json'];
+        
+        for (let path of pathsToTry) {
+            try {
+                statusTxt.innerText = `⏳ Đang đọc cấu trúc mô hình từ: ${path}...`;
+                
+                // Thực hiện nạp thô văn bản json
+                const response = await fetch(path);
+                if (!response.ok) continue;
+                const modelJsonText = await response.text();
+                
+                // Làm sạch các thẻ định danh của Keras 3 để tránh đơ luồng tính toán
+                let fixedJsonText = modelJsonText.replace(/"module":\s*"keras[^"]*"\s*,?/g, '');
+                fixedJsonText = fixedJsonText.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+                const modelJsonParsed = JSON.parse(fixedJsonText);
 
-    // 🚀 HÀM NẠP MÔ HÌNH TRỰC TIẾP KHÔNG QUA LỆNH FETCH MẠNG
-    // 🚀 ĐOẠN CODE THAY THẾ HÀM loadModel() ĐỂ SỬA DUY NHẤT LỖI CORB
-async function loadModel() {
-    let pathsToTry = ['./model.json', './models/model.json'];
-    
-    for (let path of pathsToTry) {
-        try {
-            statusTxt.innerText = `⏳ Đang nạp cấu trúc mô hình từ: ${path}...`;
-            
-            // 1. Ép kiểu nạp thô văn bản để vượt qua bộ lọc CORB của Chrome
-            const response = await fetch(path, { method: 'GET', mode: 'cors' });
-            if (!response.ok) continue;
-            const modelJsonText = await response.text();
-            
-            // Dọn dẹp lỗi định dạng chuỗi Keras 3 nếu có
-            let fixedJsonText = modelJsonText.replace(/"module":\s*"keras[^"]*"\s*,?/g, '');
-            fixedJsonText = fixedJsonText.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
-            const modelJsonParsed = JSON.parse(fixedJsonText);
-
-            // 2. 🛠️ BẺ GÃY CORB: Biến chuỗi văn bản thành một đối tượng Blob ảo nội bộ
-            // Trình duyệt sẽ đọc file trực tiếp từ RAM máy tính thay vì gọi qua URL mạng mạng GitHub
-            const blob = new Blob([JSON.stringify(modelJsonParsed)], { type: 'application/json' });
-            const objectUrl = URL.createObjectURL(blob);
-            
-            // 3. Tiến hành nạp mô hình thông qua Object URL vừa khởi tạo
-            // Tự động nhận diện cấu trúc Graph Model hoặc Layers Model của bạn
-            if (modelJsonParsed.modelTopology && modelJsonParsed.modelTopology.node) {
-                model = await tf.loadGraphModel(objectUrl);
-            } else {
-                model = await tf.loadLayersModel(objectUrl);
+                // Biến đổi chuỗi thành đối tượng Blob bộ nhớ cục bộ để bypass hoàn toàn CORB
+                const blob = new Blob([JSON.stringify(modelJsonParsed)], { type: 'application/json' });
+                const objectUrl = URL.createObjectURL(blob);
+                
+                // Nạp mô hình vào hệ thống
+                if (modelJsonParsed.modelTopology && modelJsonParsed.modelTopology.node) {
+                    model = await tf.loadGraphModel(objectUrl);
+                } else {
+                    model = await tf.loadLayersModel(objectUrl);
+                }
+                
+                URL.revokeObjectURL(objectUrl);
+                statusTxt.innerText = "✅ Hệ thống AI đã sẵn sàng hoạt động!";
+                statusTxt.style.color = "var(--accent-success)";
+                return;
+            } catch (err) {
+                console.warn(`Đường dẫn ${path} không khả dụng, đang quét tiếp...`, err);
             }
-            
-            // Giải phóng bộ nhớ đệm Object URL sau khi nạp thành công
-            URL.revokeObjectURL(objectUrl);
-
-            statusTxt.innerText = "✅ Hệ thống AI đã sẵn sàng hoạt động!";
-            statusTxt.style.color = "var(--accent-success)";
-            return; // Thành công thì thoát luồng ngay lập tức
-        } catch (err) {
-            console.warn(`Đường dẫn ${path} bị chặn hoặc không khớp cấu trúc, đang quét tiếp...`, err);
         }
+        
+        statusTxt.innerText = "❌ Lỗi: Không thể khởi tạo mô hình AI.";
+        statusTxt.style.color = "var(--accent-error)";
     }
-    
-    statusTxt.innerText = "❌ Lỗi: Không thể khởi tạo mô hình do cơ chế bảo mật CORB của trình duyệt.";
-    statusTxt.style.color = "var(--accent-error)";
-}
-
 
     imageUpload.addEventListener('change', function(event) {
-        const file = event.target.files[0];
+        const file = event.target.files;
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -179,7 +169,7 @@ async function loadModel() {
 
     filterPreview.onload = async function() {
         if (!model) {
-            alert("Mô hình AI chưa được nạp xong!");
+            alert("Mô hình AI chưa được khởi tạo thành công!");
             return;
         }
 
@@ -190,7 +180,7 @@ async function loadModel() {
         setTimeout(async () => {
             try {
                 let tensor = tf.browser.fromPixels(filterPreview)
-                    .resizeNearestNeighbor([224, 224]) 
+                    .resizeNearestNeighbor() 
                     .toFloat()
                     .div(tf.scalar(255.0)) 
                     .expandDims(0);
@@ -218,3 +208,19 @@ async function loadModel() {
                     resultTxt.style.color = "var(--accent-error)";
                 }
 
+                resultTxt.innerText = finalStatus;
+                lifespanTxt.innerText = lifespan;
+                actionTxt.innerText = action;
+
+                tensor.dispose();
+                prediction.dispose();
+            } catch (error) {
+                console.error("Lỗi phân tích mạng nơ-ron:", error);
+                resultTxt.innerText = "❌ Lỗi phân tích ảnh";
+            }
+        }, 50);
+    };
+
+    // Kích hoạt nạp mô hình ngay khi trình duyệt quét qua script thuần
+    loadModel();
+</script>
