@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AC Filter Scanner - AI Diagnostic</title>
-    <link href="https://googleapis.com" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #0d1117;
@@ -43,10 +43,12 @@
             text-align: center; cursor: pointer; transition: border-color 0.2s; margin-bottom: 25px;
         }
         .upload-section:hover { border-color: var(--accent-color); }
+        .upload-section.disabled { opacity: 0.6; cursor: not-allowed; }
         .upload-btn {
             background-color: #21262d; border: 1px solid var(--border-color); color: var(--accent-color);
             padding: 10px 20px; font-size: 14px; font-weight: 600; border-radius: 6px; cursor: pointer; margin-top: 15px;
         }
+        .upload-btn:disabled { cursor: not-allowed; opacity: 0.6; }
         input[type="file"] { display: none; }
         .preview-container {
             width: 100%; max-height: 300px; display: none; justify-content: center; align-items: center;
@@ -66,13 +68,13 @@
     <h1>🔍 AC Filter Scanner</h1>
     <div class="subtitle">Edge AI Diagnostic Web Application for HVAC Filter Condition Evaluation</div>
 
-    <div class="upload-section" onclick="document.getElementById('imageUpload').click()">
+    <div class="upload-section disabled" id="uploadSection">
         <svg width="40" height="40" viewBox="0 0 16 16" fill="currentColor" style="color: var(--text-muted); margin-bottom: 10px;">
             <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
             <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
         </svg>
         <div style="font-size: 14px;">Kéo thả hình ảnh vào đây hoặc nhấp để chọn file</div>
-        <button class="upload-btn">Chọn hình ảnh</button>
+        <button class="upload-btn" id="chooseButton" type="button" disabled>Chọn hình ảnh</button>
         <input type="file" id="imageUpload" accept="image/*">
     </div>
 
@@ -97,130 +99,372 @@
     </div>
 </div>
 
-<!-- 📦 NHÚNG THƯ VIỆN TENSORFLOW THUẦN KHÔNG DÙNG MODULE ĐỂ PHÁ VỠ CORB -->
-<script src="https://cloudflare.com"></script>
+<!-- Local TensorFlow.js bundle: no Cloudflare/third-party CORB dependency. -->
+<script src="./tf.js"></script>
 
 <script>
-    const imageUpload = document.getElementById('imageUpload');
-    const filterPreview = document.getElementById('filterPreview');
-    const previewContainer = document.getElementById('previewContainer');
-    
-    const statusTxt = document.getElementById('statusTxt');
-    const resultTxt = document.getElementById('resultTxt');
-    const lifespanTxt = document.getElementById('lifespanTxt');
-    const actionTxt = document.getElementById('actionTxt');
+(() => {
+    "use strict";
 
-    const LABELS = ["Sạch (Clean)", "Bụi bẩn (Dusty)", "Nấm mốc (Moldy)"];
-    let model;
+    const MODEL_URL = "./model.json";
+    const LABELS = ["clean", "dusty", "mold"];
 
-    // 🚀 HÀM NẠP MÔ HÌNH KHÔNG BỊ TREO BỞI CORB
-    async function loadModel() {
-        let pathsToTry = ['./model.json', './models/model.json'];
-        
-        for (let path of pathsToTry) {
-            try {
-                statusTxt.innerText = `⏳ Đang đọc cấu trúc mô hình từ: ${path}...`;
-                
-                // Thực hiện nạp thô văn bản json
-                const response = await fetch(path);
-                if (!response.ok) continue;
-                const modelJsonText = await response.text();
-                
-                // Làm sạch các thẻ định danh của Keras 3 để tránh đơ luồng tính toán
-                let fixedJsonText = modelJsonText.replace(/"module":\s*"keras[^"]*"\s*,?/g, '');
-                fixedJsonText = fixedJsonText.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
-                const modelJsonParsed = JSON.parse(fixedJsonText);
+    const imageUpload = document.getElementById("imageUpload");
+    const filterPreview = document.getElementById("filterPreview");
+    const previewContainer = document.getElementById("previewContainer");
+    const uploadSection = document.getElementById("uploadSection");
+    const chooseButton = document.getElementById("chooseButton");
 
-                // Biến đổi chuỗi thành đối tượng Blob bộ nhớ cục bộ để bypass hoàn toàn CORB
-                const blob = new Blob([JSON.stringify(modelJsonParsed)], { type: 'application/json' });
-                const objectUrl = URL.createObjectURL(blob);
-                
-                // Nạp mô hình vào hệ thống
-                if (modelJsonParsed.modelTopology && modelJsonParsed.modelTopology.node) {
-                    model = await tf.loadGraphModel(objectUrl);
-                } else {
-                    model = await tf.loadLayersModel(objectUrl);
-                }
-                
-                URL.revokeObjectURL(objectUrl);
-                statusTxt.innerText = "✅ Hệ thống AI đã sẵn sàng hoạt động!";
-                statusTxt.style.color = "var(--accent-success)";
-                return;
-            } catch (err) {
-                console.warn(`Đường dẫn ${path} không khả dụng, đang quét tiếp...`, err);
-            }
-        }
-        
-        statusTxt.innerText = "❌ Lỗi: Không thể khởi tạo mô hình AI.";
-        statusTxt.style.color = "var(--accent-error)";
+    const statusTxt = document.getElementById("statusTxt");
+    const resultTxt = document.getElementById("resultTxt");
+    const lifespanTxt = document.getElementById("lifespanTxt");
+    const actionTxt = document.getElementById("actionTxt");
+
+    let model = null;
+    let currentObjectUrl = null;
+    let modelReady = false;
+
+    function setStatus(text, color) {
+        statusTxt.textContent = text;
+        if (color) statusTxt.style.color = color;
     }
 
-    imageUpload.addEventListener('change', function(event) {
-        const file = event.target.files;
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                filterPreview.src = e.target.result;
-                previewContainer.style.display = "flex";
-            };
-            reader.readAsDataURL(file);
-        }
-    });
+    function setUploadEnabled(enabled) {
+        modelReady = enabled;
+        imageUpload.disabled = !enabled;
+        chooseButton.disabled = !enabled;
+        uploadSection.classList.toggle("disabled", !enabled);
+    }
 
-    filterPreview.onload = async function() {
-        if (!model) {
-            alert("Mô hình AI chưa được khởi tạo thành công!");
+    function dtypeBytes(dtype) {
+        const sizes = {
+            float32: 4,
+            float16: 2,
+            int32: 4,
+            uint8: 1,
+            uint16: 2,
+            bool: 1
+        };
+        if (!(dtype in sizes)) {
+            throw new Error("Unsupported weight dtype in manifest: " + dtype);
+        }
+        return sizes[dtype];
+    }
+
+    async function verifyModelPackage(modelUrl) {
+        const response = await fetch(modelUrl, { cache: "no-store" });
+        if (!response.ok) {
+            throw new Error("Không thể tải model.json (HTTP " + response.status + ").");
+        }
+
+        const manifest = await response.json();
+        if (manifest.format !== "layers-model") {
+            throw new Error("model.json không phải TensorFlow.js Layers Model.");
+        }
+        if (!Array.isArray(manifest.weightsManifest)) {
+            throw new Error("model.json thiếu weightsManifest.");
+        }
+
+        const baseUrl = new URL(modelUrl, window.location.href);
+        let expectedBytes = 0;
+        let actualBytes = 0;
+
+        for (const group of manifest.weightsManifest) {
+            for (const spec of group.weights || []) {
+                const count = spec.shape.reduce((total, dimension) => total * dimension, 1);
+                const storedDtype =
+                    spec.quantization && spec.quantization.dtype
+                        ? spec.quantization.dtype
+                        : spec.dtype;
+                expectedBytes += count * dtypeBytes(storedDtype);
+            }
+
+            for (const path of group.paths || []) {
+                const shardUrl = new URL(path, baseUrl);
+                const shardResponse = await fetch(shardUrl, { cache: "no-store" });
+                if (!shardResponse.ok) {
+                    throw new Error(
+                        "Thiếu file trọng số " + path +
+                        " (HTTP " + shardResponse.status + ")."
+                    );
+                }
+                const buffer = await shardResponse.arrayBuffer();
+                actualBytes += buffer.byteLength;
+            }
+        }
+
+        if (expectedBytes !== actualBytes) {
+            throw new Error(
+                "Gói mô hình không khớp: model.json khai báo " +
+                expectedBytes.toLocaleString() +
+                " byte trọng số nhưng các file .bin có " +
+                actualBytes.toLocaleString() +
+                " byte. Mô hình cần được chuyển đổi lại."
+            );
+        }
+    }
+
+    async function loadModel() {
+        if (typeof window.tf === "undefined") {
+            throw new Error("TensorFlow.js không tải được từ ./tf.js.");
+        }
+
+        setStatus("Đang kiểm tra gói mô hình AI...", "var(--accent-color)");
+        await verifyModelPackage(MODEL_URL);
+
+        setStatus("Đang tải mô hình AI...", "var(--accent-color)");
+        model = await tf.loadLayersModel(MODEL_URL, {
+            strict: true
+        });
+
+        const inputShape = model.inputs[0].shape;
+        const outputShape = model.outputs[0].shape;
+
+        if (
+            inputShape.length !== 4 ||
+            inputShape[1] !== 224 ||
+            inputShape[2] !== 224 ||
+            inputShape[3] !== 3
+        ) {
+            throw new Error(
+                "Model có input shape không mong đợi: " +
+                JSON.stringify(inputShape)
+            );
+        }
+
+        if (outputShape.length !== 2 || outputShape[1] !== 3) {
+            throw new Error(
+                "Model phải có 3 đầu ra Clean/Dusty/Mold, nhưng nhận được: " +
+                JSON.stringify(outputShape)
+            );
+        }
+
+        // Second runtime-level validation after loading the model.
+        const testInput = tf.zeros([1, 224, 224, 3], "float32");
+        let testOutput;
+        try {
+            testOutput = model.predict(testInput);
+            const outputTensor = Array.isArray(testOutput)
+                ? testOutput[0]
+                : testOutput;
+            const testValues = await outputTensor.data();
+
+            if (testValues.length !== 3 || !Array.from(testValues).every(Number.isFinite)) {
+                throw new Error("Model self-test trả về dữ liệu không hợp lệ.");
+            }
+        } finally {
+            testInput.dispose();
+            if (Array.isArray(testOutput)) {
+                testOutput.forEach(t => t.dispose());
+            } else if (testOutput) {
+                testOutput.dispose();
+            }
+        }
+
+        setStatus("✅ Hệ thống AI đã sẵn sàng hoạt động!", "var(--accent-success)");
+        setUploadEnabled(true);
+
+        console.log("AI model ready:", {
+            inputShape,
+            outputShape
+        });
+    }
+
+    function makeModelInput(image) {
+        return tf.tidy(() => {
+            const sourceWidth = image.naturalWidth;
+            const sourceHeight = image.naturalHeight;
+            const cropSize = Math.min(sourceWidth, sourceHeight);
+            const sourceX = (sourceWidth - cropSize) / 2;
+            const sourceY = (sourceHeight - cropSize) / 2;
+
+            const canvas = document.createElement("canvas");
+            canvas.width = 224;
+            canvas.height = 224;
+
+            const context = canvas.getContext("2d");
+            context.drawImage(
+                image,
+                sourceX,
+                sourceY,
+                cropSize,
+                cropSize,
+                0,
+                0,
+                224,
+                224
+            );
+
+            // The model already contains its own Rescaling layer.
+            // Feed raw 0-255 RGB pixels to match the Python app.
+            return tf.browser
+                .fromPixels(canvas, 3)
+                .toFloat()
+                .expandDims(0);
+        });
+    }
+
+    function getRecommendation(index) {
+        if (index === 0) {
+            return {
+                lifespan: "Ước tính còn khoảng 2 - 3 tháng nếu tiếp tục được bảo dưỡng định kỳ.",
+                action: "Bộ lọc được AI đánh giá là sạch. Tiếp tục kiểm tra định kỳ.",
+                color: "var(--accent-success)"
+            };
+        }
+
+        if (index === 1) {
+            return {
+                lifespan: "Ước tính nên vệ sinh hoặc thay trong vòng 1 - 2 tuần tới.",
+                action: "Phát hiện bụi bẩn. Khuyến nghị vệ sinh hoặc thay bộ lọc sớm.",
+                color: "var(--accent-color)"
+            };
+        }
+
+        return {
+            lifespan: "Khuyến nghị thay ngay; tình trạng có dấu hiệu nấm mốc.",
+            action: "AI phát hiện dấu hiệu giống nấm mốc. Kiểm tra trực tiếp và vệ sinh/thay bộ lọc.",
+            color: "var(--accent-error)"
+        };
+    }
+
+    async function analyzeImage() {
+        if (!modelReady || !model) {
+            throw new Error("Mô hình AI chưa sẵn sàng.");
+        }
+
+        const input = makeModelInput(filterPreview);
+        let prediction;
+
+        try {
+            prediction = model.predict(input);
+            const outputTensor = Array.isArray(prediction)
+                ? prediction[0]
+                : prediction;
+
+            const scores = Array.from(await outputTensor.data());
+            if (scores.length !== 3 || !scores.every(Number.isFinite)) {
+                throw new Error("Mô hình trả về kết quả không hợp lệ.");
+            }
+
+            const highestIndex = scores.indexOf(Math.max(...scores));
+            const confidence = scores[highestIndex] * 100;
+            const recommendation = getRecommendation(highestIndex);
+
+            resultTxt.textContent =
+                LABELS[highestIndex] +
+                " (" +
+                confidence.toFixed(2) +
+                "%)";
+            resultTxt.style.color = recommendation.color;
+            lifespanTxt.textContent = recommendation.lifespan;
+            actionTxt.textContent = recommendation.action;
+
+            console.log("AI prediction:", {
+                label: LABELS[highestIndex],
+                confidence,
+                scores
+            });
+        } finally {
+            input.dispose();
+            if (Array.isArray(prediction)) {
+                prediction.forEach(t => t.dispose());
+            } else if (prediction) {
+                prediction.dispose();
+            }
+        }
+    }
+
+    function processSelectedFile(file) {
+        if (!file) return;
+
+        if (!modelReady) {
+            resultTxt.textContent = "Mô hình AI chưa sẵn sàng.";
             return;
         }
 
-        resultTxt.innerText = "Đang xử lý hình ảnh...";
-        lifespanTxt.innerText = "Đang tính toán...";
-        actionTxt.innerText = "Đang phân tích...";
+        if (!file.type || !file.type.startsWith("image/")) {
+            resultTxt.textContent = "❌ Vui lòng chọn một file hình ảnh hợp lệ.";
+            return;
+        }
 
-        setTimeout(async () => {
-            try {
-                let tensor = tf.browser.fromPixels(filterPreview)
-                    .resizeNearestNeighbor() 
-                    .toFloat()
-                    .div(tf.scalar(255.0)) 
-                    .expandDims(0);
+        if (currentObjectUrl) {
+            URL.revokeObjectURL(currentObjectUrl);
+        }
 
-                const prediction = await model.predict(tensor);
-                const predictionData = await prediction.data();
+        currentObjectUrl = URL.createObjectURL(file);
+        filterPreview.src = currentObjectUrl;
+        previewContainer.style.display = "flex";
 
-                const highestIndex = predictionData.indexOf(Math.max(...predictionData));
-                const finalStatus = LABELS[highestIndex];
+        resultTxt.textContent = "Đang xử lý hình ảnh...";
+        lifespanTxt.textContent = "Đang tính toán...";
+        actionTxt.textContent = "Đang phân tích...";
+    }
 
-                let lifespan = "";
-                let action = "";
+    chooseButton.addEventListener("click", () => {
+        if (modelReady) imageUpload.click();
+    });
 
-                if (highestIndex === 0) {
-                    lifespan = "Còn khoảng 2 - 3 tháng sử dụng tốt.";
-                    action = "Bộ lọc rất sạch. Không cần thay thế, hãy tiếp tục kiểm định định kỳ sau 30 ngày.";
-                    resultTxt.style.color = "var(--accent-success)";
-                } else if (highestIndex === 1) {
-                    lifespan = "Nên vệ sinh hoặc đổi mới trong vòng 1-2 tuần tới.";
-                    action = "Hàm lượng bụi tích tụ cao. Khuyến nghị tháo màng lọc ra vệ sinh xịt rửa hoặc thay tấm lọc.";
-                    resultTxt.style.color = "var(--accent-color)";
-                } else {
-                    lifespan = "⚠️ ĐÃ HẾT HẠN SỬ DỤNG - NGUY HIỂM!";
-                    action = "Phát hiện bào tử nấm mốc nguy hại cho hô hấp. Hãy thay thế bộ lọc mới ngay lập tức.";
-                    resultTxt.style.color = "var(--accent-error)";
-                }
+    uploadSection.addEventListener("click", (event) => {
+        if (event.target === chooseButton) return;
+        if (modelReady) imageUpload.click();
+    });
 
-                resultTxt.innerText = finalStatus;
-                lifespanTxt.innerText = lifespan;
-                actionTxt.innerText = action;
+    imageUpload.addEventListener("change", event => {
+        processSelectedFile(event.target.files && event.target.files[0]);
+    });
 
-                tensor.dispose();
-                prediction.dispose();
-            } catch (error) {
-                console.error("Lỗi phân tích mạng nơ-ron:", error);
-                resultTxt.innerText = "❌ Lỗi phân tích ảnh";
-            }
-        }, 50);
-    };
+    ["dragenter", "dragover"].forEach(eventName => {
+        uploadSection.addEventListener(eventName, event => {
+            event.preventDefault();
+            if (modelReady) uploadSection.style.borderColor = "var(--accent-color)";
+        });
+    });
 
-    // Kích hoạt nạp mô hình ngay khi trình duyệt quét qua script thuần
-    loadModel();
+    ["dragleave", "drop"].forEach(eventName => {
+        uploadSection.addEventListener(eventName, event => {
+            event.preventDefault();
+            uploadSection.style.borderColor = "";
+        });
+    });
+
+    uploadSection.addEventListener("drop", event => {
+        if (!modelReady) return;
+        const file = event.dataTransfer.files && event.dataTransfer.files[0];
+        processSelectedFile(file);
+    });
+
+    filterPreview.addEventListener("load", async () => {
+        try {
+            await analyzeImage();
+        } catch (error) {
+            console.error("Image inference failed:", error);
+            resultTxt.textContent = "❌ Lỗi phân tích ảnh: " + error.message;
+            lifespanTxt.textContent = "Chưa xác định";
+            actionTxt.textContent = "Không thể hoàn tất phân tích.";
+        }
+    });
+
+    filterPreview.addEventListener("error", () => {
+        resultTxt.textContent = "❌ Không thể đọc hình ảnh đã chọn.";
+    });
+
+    window.addEventListener("beforeunload", () => {
+        if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+    });
+
+    setUploadEnabled(false);
+
+    loadModel().catch(error => {
+        console.error("Model initialization failed:", error);
+        setUploadEnabled(false);
+        setStatus("❌ Mô hình AI chưa sẵn sàng.", "var(--accent-error)");
+        resultTxt.textContent = error.message;
+        lifespanTxt.textContent = "Chưa xác định";
+        actionTxt.textContent =
+            "Website sẽ hoạt động sau khi gói model.json và .bin hợp lệ được tạo.";
+    });
+})();
 </script>
+</body>
+</html>
